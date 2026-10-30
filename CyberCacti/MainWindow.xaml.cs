@@ -6,9 +6,83 @@ namespace CyberCacti
 {
     public partial class MainWindow : Window
     {
+        private bool _loadingChecklist = false;
+
+        private CheckBox[] Checklist =>
+            new CheckBox[]
+            {
+                Action1,
+                Action2,
+                Action3,
+                Action4,
+                Action5
+            };
+
         public MainWindow()
         {
             InitializeComponent();
+            LoadChecklist();
+        }
+
+        private void LoadChecklist()
+        {
+            _loadingChecklist = true;
+
+            bool[] savedProgress = ProgressStore.Load();
+
+            for (int i = 0; i < Checklist.Length; i++)
+            {
+                Checklist[i].IsChecked = savedProgress[i];
+            }
+
+            _loadingChecklist = false;
+            UpdateProgress();
+        }
+
+        private void Checklist_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_loadingChecklist)
+                return;
+
+            bool[] progress = new bool[Checklist.Length];
+
+            for (int i = 0; i < Checklist.Length; i++)
+            {
+                progress[i] = Checklist[i].IsChecked == true;
+            }
+
+            ProgressStore.Save(progress);
+            UpdateProgress();
+        }
+
+        private void UpdateProgress()
+        {
+            int completed = 0;
+
+            foreach (CheckBox item in Checklist)
+            {
+                if (item.IsChecked == true)
+                    completed++;
+            }
+
+            ProgressBarControl.Value = completed;
+            ProgressText.Text =
+                $"{completed} out of 5 actions completed";
+        }
+
+        private void ResetProgress_Click(object sender, RoutedEventArgs e)
+        {
+            _loadingChecklist = true;
+
+            foreach (CheckBox item in Checklist)
+            {
+                item.IsChecked = false;
+            }
+
+            _loadingChecklist = false;
+
+            ProgressStore.Reset();
+            UpdateProgress();
         }
 
         private void Navigate_Click(object sender, RoutedEventArgs e)
@@ -17,6 +91,16 @@ namespace CyberCacti
                 return;
 
             PageTitle.Text = page;
+
+            bool showHelp = page == "How to Help";
+
+            HelpPanel.Visibility = showHelp
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+
+            StandardPanel.Visibility = showHelp
+                ? Visibility.Collapsed
+                : Visibility.Visible;
 
             switch (page)
             {
@@ -45,9 +129,6 @@ namespace CyberCacti
                     break;
 
                 case "How to Help":
-                    PageHeading.Text = "How You Can Help";
-                    PageDescription.Text =
-                        "Small actions can make a difference. Explore practical ways to make your garden and local environment safer for hedgehogs.";
                     break;
 
                 case "More":
@@ -79,9 +160,8 @@ namespace CyberCacti
         private void Explore_Click(object sender, RoutedEventArgs e)
         {
             PageTitle.Text = "How to Help";
-            PageHeading.Text = "Make a difference for hedgehogs";
-            PageDescription.Text =
-                "Discover practical actions you can take to help hedgehogs and protect their habitats.";
+            StandardPanel.Visibility = Visibility.Collapsed;
+            HelpPanel.Visibility = Visibility.Visible;
         }
     }
 }
