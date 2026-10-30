@@ -3,10 +3,8 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Cyber Cacti"
-        Height="800"
-        Width="1200"
-        MinHeight="650"
-        MinWidth="900"
+        Height="800" Width="1200"
+        MinHeight="650" MinWidth="900"
         WindowStartupLocation="CenterScreen"
         Background="{StaticResource CreamBrush}">
 
@@ -16,8 +14,7 @@
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <Border Grid.Column="0"
-                Background="{StaticResource ForestBrush}">
+        <Border Grid.Column="0" Background="{StaticResource ForestBrush}">
             <DockPanel Margin="20">
                 <StackPanel DockPanel.Dock="Top">
                     <TextBlock Text="🌵 CYBER CACTI"
@@ -26,18 +23,12 @@
                                FontWeight="Bold"
                                Margin="0,15,0,35"/>
 
-                    <Button Content="Home" Tag="Home"
-                            Click="Navigate_Click" Margin="0,5"/>
-                    <Button Content="Dashboard" Tag="Dashboard"
-                            Click="Navigate_Click" Margin="0,5"/>
-                    <Button Content="About Us" Tag="About Us"
-                            Click="Navigate_Click" Margin="0,5"/>
-                    <Button Content="Hedgehogs" Tag="Hedgehogs"
-                            Click="Navigate_Click" Margin="0,5"/>
-                    <Button Content="How to Help" Tag="How to Help"
-                            Click="Navigate_Click" Margin="0,5"/>
-                    <Button Content="More" Tag="More"
-                            Click="Navigate_Click" Margin="0,5"/>
+                    <Button Content="Home" Tag="Home" Click="Navigate_Click" Margin="0,5"/>
+                    <Button Content="Dashboard" Tag="Dashboard" Click="Navigate_Click" Margin="0,5"/>
+                    <Button Content="About Us" Tag="About Us" Click="Navigate_Click" Margin="0,5"/>
+                    <Button Content="Hedgehogs" Tag="Hedgehogs" Click="Navigate_Click" Margin="0,5"/>
+                    <Button Content="How to Help" Tag="How to Help" Click="Navigate_Click" Margin="0,5"/>
+                    <Button Content="More" Tag="More" Click="Navigate_Click" Margin="0,5"/>
                 </StackPanel>
 
                 <TextBlock DockPanel.Dock="Bottom"
@@ -69,10 +60,9 @@
 
                 <Grid>
 
-                    <!-- Standard page content -->
+                    <!-- Standard pages -->
                     <StackPanel x:Name="StandardPanel"
                                 VerticalAlignment="Center">
-
                         <TextBlock x:Name="PageHeading"
                                    Text="Protecting hedgehogs, one step at a time."
                                    FontSize="27"
@@ -95,11 +85,78 @@
                                 Click="Explore_Click"/>
                     </StackPanel>
 
-                    <!-- How to Help checklist -->
+                    <!-- Dashboard -->
+                    <StackPanel x:Name="DashboardPanel"
+                                Visibility="Collapsed">
+
+                        <TextBlock Text="Your Impact"
+                                   FontSize="29"
+                                   FontWeight="Bold"
+                                   Foreground="{StaticResource ForestBrush}"
+                                   Margin="0,0,0,10"/>
+
+                        <TextBlock Text="Every small action helps make the world safer for hedgehogs."
+                                   FontSize="16"
+                                   Foreground="#58665C"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,30"/>
+
+                        <Border Background="{StaticResource SageBrush}"
+                                CornerRadius="16"
+                                Padding="25"
+                                Margin="0,0,0,20">
+
+                            <StackPanel>
+                                <TextBlock Text="COMPLETED ACTIONS"
+                                           FontSize="13"
+                                           FontWeight="Bold"
+                                           Foreground="{StaticResource ForestBrush}"/>
+
+                                <TextBlock x:Name="DashboardCount"
+                                           Text="0 / 5"
+                                           FontSize="42"
+                                           FontWeight="Bold"
+                                           Foreground="{StaticResource ForestBrush}"
+                                           Margin="0,8"/>
+
+                                <ProgressBar x:Name="DashboardProgress"
+                                             Minimum="0"
+                                             Maximum="5"
+                                             Value="0"
+                                             Height="16"/>
+
+                                <TextBlock x:Name="DashboardPercentage"
+                                           Text="0% completed"
+                                           FontSize="14"
+                                           Foreground="{StaticResource ForestBrush}"
+                                           Margin="0,10,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <TextBlock Text="Your Mission"
+                                   FontSize="21"
+                                   FontWeight="Bold"
+                                   Foreground="{StaticResource ForestBrush}"
+                                   Margin="0,15,0,10"/>
+
+                        <TextBlock Text="Help protect hedgehogs by making small, positive changes in your garden and local environment."
+                                   FontSize="16"
+                                   Foreground="#58665C"
+                                   TextWrapping="Wrap"
+                                   LineHeight="25"/>
+
+                        <Button Content="View How to Help"
+                                Width="190"
+                                HorizontalAlignment="Left"
+                                Margin="0,25,0,0"
+                                Tag="How to Help"
+                                Click="Navigate_Click"/>
+                    </StackPanel>
+
+                    <!-- How to Help -->
                     <ScrollViewer x:Name="HelpPanel"
                                   VerticalScrollBarVisibility="Auto"
                                   Visibility="Collapsed">
-
                         <StackPanel>
                             <TextBlock Text="Small actions. Big difference."
                                        FontSize="27"
@@ -129,36 +186,31 @@
 
                             <CheckBox x:Name="Action1"
                                       Content="Check that hedgehogs can move between gardens"
-                                      FontSize="16"
-                                      Margin="0,10"
+                                      FontSize="16" Margin="0,10"
                                       Checked="Checklist_Changed"
                                       Unchecked="Checklist_Changed"/>
 
                             <CheckBox x:Name="Action2"
                                       Content="Keep a shallow dish of fresh water available"
-                                      FontSize="16"
-                                      Margin="0,10"
+                                      FontSize="16" Margin="0,10"
                                       Checked="Checklist_Changed"
                                       Unchecked="Checklist_Changed"/>
 
                             <CheckBox x:Name="Action3"
                                       Content="Check long grass carefully before mowing"
-                                      FontSize="16"
-                                      Margin="0,10"
+                                      FontSize="16" Margin="0,10"
                                       Checked="Checklist_Changed"
                                       Unchecked="Checklist_Changed"/>
 
                             <CheckBox x:Name="Action4"
                                       Content="Keep garden spaces safe and free of litter"
-                                      FontSize="16"
-                                      Margin="0,10"
+                                      FontSize="16" Margin="0,10"
                                       Checked="Checklist_Changed"
                                       Unchecked="Checklist_Changed"/>
 
                             <CheckBox x:Name="Action5"
                                       Content="Learn more about hedgehog conservation"
-                                      FontSize="16"
-                                      Margin="0,10"
+                                      FontSize="16" Margin="0,10"
                                       Checked="Checklist_Changed"
                                       Unchecked="Checklist_Changed"/>
 
