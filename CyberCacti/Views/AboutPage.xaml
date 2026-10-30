@@ -1,0 +1,31 @@
+<UserControl x:Class="CyberCacti.Views.AboutPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:CyberCacti.Controls">
+    <StackPanel>
+        <controls:PageHeader Title="About Us" Subtitle="Why Cyber Cacti exists."/>
+
+        <Border Style="{StaticResource CardBorder}">
+            <StackPanel>
+                <TextBlock Text="Who we are" Style="{StaticResource SectionTitle}"/>
+                <TextBlock Style="{StaticResource BodyText}" Margin="0,8,0,0"
+                           Text="Cyber Cacti is a project about hedgehog awareness, practical conservation and helping people see how small changes can make outdoor spaces safer for wildlife."/>
+            </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource CardBorder}">
+            <StackPanel>
+                <TextBlock Text="What we believe" Style="{StaticResource SectionTitle}" Margin="0,0,0,12"/>
+                <TextBlock Text="01  Awareness" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource ForestBrush}"/>
+                <TextBlock Style="{StaticResource BodyText}" Foreground="{StaticResource MutedBrush}" Margin="0,4,0,14"
+                           Text="Understanding wildlife is the first step towards protecting it."/>
+                <TextBlock Text="02  Practical action" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource ForestBrush}"/>
+                <TextBlock Style="{StaticResource BodyText}" Foreground="{StaticResource MutedBrush}" Margin="0,4,0,14"
+                           Text="Simple changes in gardens and green spaces can remove everyday hazards."/>
+                <TextBlock Text="03  Wildlife protection" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource ForestBrush}"/>
+                <TextBlock Style="{StaticResource BodyText}" Foreground="{StaticResource MutedBrush}" Margin="0,4,0,0"
+                           Text="We want more people to notice, and care about, the wildlife living around them."/>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

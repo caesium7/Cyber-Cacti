@@ -1,0 +1,98 @@
+<UserControl x:Class="CyberCacti.Views.LoginView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:CyberCacti.Controls">
+    <Grid Margin="32">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="1.05*"/>
+            <ColumnDefinition Width="0.95*"/>
+        </Grid.ColumnDefinitions>
+
+        <Border Grid.Column="0"
+                Background="{StaticResource DeepForestBrush}"
+                CornerRadius="28"
+                Padding="44"
+                Margin="0,0,16,0"
+                ClipToBounds="True">
+            <Grid>
+                <StackPanel VerticalAlignment="Center" MaxWidth="480">
+                    <TextBlock Text="CYBER CACTI"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               Foreground="#D7E4D3"
+                               Margin="0,0,0,12"/>
+                    <TextBlock Text="Small actions.&#x0a;Big impact."
+                               FontSize="42"
+                               FontWeight="SemiBold"
+                               Foreground="White"
+                               LineHeight="50"/>
+                    <TextBlock Text="A safer world for hedgehogs, one garden at a time."
+                               FontSize="16"
+                               Foreground="#D5E2D5"
+                               TextWrapping="Wrap"
+                               Margin="0,14,0,0"/>
+                    <Border Style="{StaticResource GoldRule}" Margin="0,22,0,18"/>
+                    <TextBlock Text="LEARN  ·  PROTECT  ·  MAKE A DIFFERENCE"
+                               FontSize="11"
+                               FontWeight="SemiBold"
+                               Foreground="#D5E2D5"/>
+                </StackPanel>
+                <controls:HeroScene Width="260" Height="170"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Bottom"
+                                    Margin="0,0,0,4"
+                                    IsHitTestVisible="False"/>
+            </Grid>
+        </Border>
+
+        <Border Grid.Column="1"
+                Style="{StaticResource CardBorder}"
+                Padding="32"
+                Margin="16,0,0,0"
+                VerticalAlignment="Center">
+            <StackPanel>
+                <TextBlock Text="Welcome to Cyber Cacti" Style="{StaticResource TitleText}"/>
+                <TextBlock x:Name="WelcomeHint"
+                           Text="Sign in to continue your journey."
+                           Style="{StaticResource SubtitleText}"
+                           Margin="0,0,0,16"/>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                    <Button x:Name="SignInMode" Content="Sign in" Click="SignInMode_Click"/>
+                    <Button x:Name="RegisterMode" Content="Create account" Click="RegisterMode_Click"/>
+                </StackPanel>
+
+                <TextBlock Text="Username" FontSize="12" FontWeight="SemiBold"/>
+                <TextBox x:Name="NameBox"/>
+
+                <TextBlock Text="Password" FontSize="12" FontWeight="SemiBold"/>
+                <PasswordBox x:Name="PasswordBox" KeyDown="PasswordBox_KeyDown"/>
+
+                <StackPanel x:Name="ConfirmPanel" Visibility="Collapsed">
+                    <TextBlock Text="Confirm password" FontSize="12" FontWeight="SemiBold"/>
+                    <PasswordBox x:Name="ConfirmBox"/>
+                    <TextBlock Text="Use at least 8 characters."
+                               Style="{StaticResource EyebrowText}"
+                               Margin="0,0,0,8"/>
+                </StackPanel>
+
+                <TextBlock x:Name="Feedback"
+                           FontSize="12"
+                           FontWeight="SemiBold"
+                           Foreground="{StaticResource DangerBrush}"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,8"/>
+
+                <Button x:Name="SubmitButton"
+                        Style="{StaticResource PrimaryButton}"
+                        Content="Sign in"
+                        HorizontalAlignment="Stretch"
+                        Margin="0,4,0,10"
+                        Click="Submit_Click"/>
+
+                <TextBlock Text="Your account and progress are stored locally on this computer."
+                           Style="{StaticResource EyebrowText}"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

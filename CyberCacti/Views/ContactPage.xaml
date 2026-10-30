@@ -1,0 +1,25 @@
+<UserControl x:Class="CyberCacti.Views.ContactPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:CyberCacti.Controls">
+    <StackPanel>
+        <controls:PageHeader Title="Contact Us" Subtitle="We would love to hear from you."/>
+
+        <Border Style="{StaticResource CardBorder}">
+            <StackPanel>
+                <TextBlock Text="Get in touch" Style="{StaticResource SectionTitle}"/>
+                <TextBlock Style="{StaticResource BodyText}" Margin="0,8,0,0"
+                           Text="Questions or ideas about Cyber Cacti? Use the email address below."/>
+                <Border Background="{StaticResource PaleBrush}"
+                        CornerRadius="12"
+                        Padding="16"
+                        Margin="0,14,0,0">
+                    <TextBlock Text="cybercactirobotics@gmail.com"
+                               FontSize="16"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource ForestBrush}"/>
+                </Border>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

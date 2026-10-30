@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "dgSpecHash": "tirsMHxIbmY=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\Christos-Marios\\Cyber-Cacti\\CyberCacti\\CyberCacti.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Christos-Marios\\.nuget\\packages\\microsoft.netcore.app.ref\\10.0.14\\microsoft.netcore.app.ref.10.0.14.nupkg.sha512",
+    "C:\\Users\\Christos-Marios\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\10.0.14\\microsoft.windowsdesktop.app.ref.10.0.14.nupkg.sha512",
+    "C:\\Users\\Christos-Marios\\.nuget\\packages\\microsoft.aspnetcore.app.ref\\10.0.14\\microsoft.aspnetcore.app.ref.10.0.14.nupkg.sha512",
+    "C:\\Users\\Christos-Marios\\.nuget\\packages\\microsoft.netcore.app.host.win-x64\\10.0.14\\microsoft.netcore.app.host.win-x64.10.0.14.nupkg.sha512"
+  ],
+  "logs": []
+}

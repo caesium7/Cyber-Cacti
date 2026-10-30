@@ -1,0 +1,41 @@
+<UserControl x:Class="CyberCacti.Views.MorePage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:CyberCacti.Controls">
+    <StackPanel>
+        <controls:PageHeader Title="More" Subtitle="Explore other areas of Cyber Cacti."/>
+
+        <Border Style="{StaticResource CardBorder}">
+            <StackPanel>
+                <TextBlock Text="Innovation Project" Style="{StaticResource SectionTitle}"/>
+                <TextBlock Style="{StaticResource BodyText}"
+                           Foreground="{StaticResource MutedBrush}"
+                           Margin="0,6,0,12"
+                           Text="Find out how Cyber Cacti grew from a FIRST LEGO League innovation project."/>
+                <Button Content="Explore project" HorizontalAlignment="Left" Click="Innovation_Click"/>
+            </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource CardBorder}">
+            <StackPanel>
+                <TextBlock Text="Contact Us" Style="{StaticResource SectionTitle}"/>
+                <TextBlock Style="{StaticResource BodyText}"
+                           Foreground="{StaticResource MutedBrush}"
+                           Margin="0,6,0,12"
+                           Text="Have a question or an idea? Find our contact information here."/>
+                <Button Content="Contact information" HorizontalAlignment="Left" Click="Contact_Click"/>
+            </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource CardBorder}">
+            <StackPanel>
+                <TextBlock Text="Your account" Style="{StaticResource SectionTitle}"/>
+                <TextBlock x:Name="AccountLabel"
+                           Style="{StaticResource BodyText}"
+                           Foreground="{StaticResource MutedBrush}"
+                           Margin="0,6,0,12"/>
+                <Button Content="Sign out" HorizontalAlignment="Left" Click="SignOut_Click"/>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

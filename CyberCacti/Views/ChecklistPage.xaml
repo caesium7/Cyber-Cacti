@@ -1,0 +1,33 @@
+<UserControl x:Class="CyberCacti.Views.ChecklistPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:CyberCacti.Controls">
+    <StackPanel>
+        <controls:PageHeader Title="How to Help"
+                             Subtitle="Five practical ways to make outdoor spaces safer."/>
+
+        <Border Style="{StaticResource CardBorder}">
+            <StackPanel>
+                <TextBlock Text="YOUR CHECKLIST PROGRESS" Style="{StaticResource EyebrowText}"/>
+                <TextBlock x:Name="ProgressLabel"
+                           FontSize="22"
+                           FontWeight="SemiBold"
+                           Foreground="{StaticResource ForestBrush}"/>
+                <ProgressBar x:Name="ProgressBar"/>
+                <TextBlock x:Name="ProgressHint"
+                           Style="{StaticResource BodyText}"
+                           Foreground="{StaticResource MutedBrush}"/>
+            </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource CardBorder}">
+            <StackPanel>
+                <StackPanel x:Name="TaskList"/>
+                <TextBlock Text="Only tick an action once you have actually done it."
+                           Style="{StaticResource EyebrowText}"
+                           Margin="0,8,0,12"/>
+                <Button Content="Reset checklist" HorizontalAlignment="Left" Click="Reset_Click"/>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

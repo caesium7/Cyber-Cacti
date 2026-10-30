@@ -1,0 +1,33 @@
+<UserControl x:Class="CyberCacti.Views.InnovationPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:CyberCacti.Controls">
+    <StackPanel>
+        <controls:PageHeader Title="Innovation Project"
+                             Subtitle="The FIRST LEGO League chapter of Cyber Cacti."/>
+
+        <Border Style="{StaticResource CardBorder}">
+            <StackPanel>
+                <TextBlock Text="The problem" Style="{StaticResource SectionTitle}"/>
+                <TextBlock Style="{StaticResource BodyText}" Margin="0,8,0,0"
+                           Text="Hedgehog numbers have fallen as gardens become more enclosed and outdoor spaces fill with hazards they cannot see coming: solid fences, netting, machinery and a shortage of quiet shelter."/>
+            </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource CardBorder}">
+            <StackPanel>
+                <TextBlock Text="Our idea" Style="{StaticResource SectionTitle}"/>
+                <TextBlock Style="{StaticResource BodyText}" Margin="0,8,0,0"
+                           Text="Cyber Cacti is our Innovation Project. We built this Windows app so people can learn why hedgehogs struggle, complete five practical actions, and stay engaged through Hedgehog Dash. The software is how we take the idea into homes and gardens."/>
+            </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource CardBorder}">
+            <StackPanel>
+                <TextBlock Text="Robotics and the mission" Style="{StaticResource SectionTitle}"/>
+                <TextBlock Style="{StaticResource BodyText}" Margin="0,8,0,0"
+                           Text="Robotics sits alongside the app. Sensing, navigating and keeping a small animal safe is the same challenge we explore with our robot. Cyber Cacti connects that FLL work to everyday conservation: learn, act, and remember why it matters."/>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>
