@@ -10,16 +10,13 @@ using System.Windows.Media;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 using System.Windows.Input;
+using System.Windows.Media.Effects;
 using Path = System.IO.Path;
 
 namespace CyberCacti;
 
 public partial class MainWindow : Window
 {
-    // ------------------------------------------------------------
-    // DATA
-    // ------------------------------------------------------------
-
     private readonly string folder = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "CyberCacti");
@@ -27,27 +24,27 @@ public partial class MainWindow : Window
     private string username = "";
     private bool[] tasks = new bool[5];
     private int highScore;
+    private bool registering;
+    private string currentPage = "Home";
 
     private Grid? content;
-    private Border? activeNav;
     private Canvas? gameCanvas;
     private TextBlock? gameInfo;
+    private TextBlock? gameScore;
+    private TextBlock? gameLives;
+    private TextBlock? gameBest;
     private DispatcherTimer? timer;
 
     private readonly List<GameObject> objects = new();
+    private readonly List<Button> navButtons = new();
 
-    private int lane = 1;
-    private int score;
-    private int lives = 3;
-    private int ticks;
+    private int lane = 1, score, lives = 3, ticks;
     private bool playing;
-    private string currentPage = "Home";
-
-    private bool registering;
+    private readonly Random random = new();
 
     private class GameObject
     {
-        public Ellipse Shape = new();
+        public FrameworkElement Shape = new Border();
         public int Lane;
         public double Y;
         public bool Apple;
@@ -69,30 +66,21 @@ public partial class MainWindow : Window
     private string AccountsFile => Path.Combine(folder, "accounts.json");
     private string ProgressFile => Path.Combine(folder, "progress.json");
 
-    // ------------------------------------------------------------
-    // COLOUR PALETTE
-    // ------------------------------------------------------------
-
+    // Colour palette
     private static SolidColorBrush B(string hex) =>
         new((Color)ColorConverter.ConvertFromString(hex));
 
-    private readonly Brush forest = B("#234B3B");
+    private readonly Brush forest = B("#244B3B");
     private readonly Brush deepForest = B("#18382D");
-    private readonly Brush cream = B("#F5F4EC");
-    private readonly Brush paleSage = B("#E9EFE5");
-    private readonly Brush sage = B("#D8E5D4");
-    private readonly Brush gold = B("#C49A55");
-    private readonly Brush ink = B("#29372F");
-    private readonly Brush muted = B("#78847B");
-    private readonly Brush line = B("#E5E9E0");
+    private readonly Brush cream = B("#F6F5EF");
+    private readonly Brush sage = B("#E7EEE3");
+    private readonly Brush pale = B("#F0F5ED");
+    private readonly Brush gold = B("#C69B59");
+    private readonly Brush ink = B("#26372E");
+    private readonly Brush muted = B("#7D8980");
+    private readonly Brush line = B("#E7EBE3");
     private readonly Brush white = Brushes.White;
-    private readonly Brush softGold = B("#F5EBD7");
-    private readonly Brush paleGreen = B("#F0F5ED");
-    private readonly Brush danger = B("#A94D42");
-
-    // ------------------------------------------------------------
-    // STARTUP
-    // ------------------------------------------------------------
+    private readonly Brush red = B("#C65D4C");
 
     public MainWindow()
     {
@@ -111,13 +99,13 @@ public partial class MainWindow : Window
         ShowLogin();
     }
 
-    // ------------------------------------------------------------
-    // GENERAL UI HELPERS
-    // ------------------------------------------------------------
+    // =========================================================
+    // DESIGN SYSTEM
+    // =========================================================
 
     private TextBlock T(
         string value,
-        double size = 15,
+        double size = 14,
         bool bold = false,
         Brush? colour = null)
     {
@@ -128,27 +116,30 @@ public partial class MainWindow : Window
             FontWeight = bold ? FontWeights.SemiBold : FontWeights.Normal,
             Foreground = colour ?? ink,
             TextWrapping = TextWrapping.Wrap,
-            LineHeight = size * 1.45,
-            Margin = new Thickness(0, 3, 0, 5),
-            FontFamily = new FontFamily("Segoe UI")
+            LineHeight = size * 1.42,
+            FontFamily = new FontFamily("Segoe UI"),
+            Margin = new Thickness(0, 2, 0, 5)
         };
     }
 
-    private Border Card(UIElement child, Thickness? padding = null)
+    private Border Card(
+        UIElement child,
+        Thickness? padding = null,
+        Brush? background = null)
     {
         return new Border
         {
-            Background = white,
-            CornerRadius = new CornerRadius(18),
-            Padding = padding ?? new Thickness(25),
+            Background = background ?? white,
+            CornerRadius = new CornerRadius(22),
+            Padding = padding ?? new Thickness(24),
             Margin = new Thickness(0, 0, 0, 17),
             BorderBrush = line,
             BorderThickness = new Thickness(1),
             Child = child,
-            Effect = new System.Windows.Media.Effects.DropShadowEffect
+            Effect = new DropShadowEffect
             {
-                BlurRadius = 15,
-                ShadowDepth = 2,
+                BlurRadius = 22,
+                ShadowDepth = 3,
                 Opacity = 0.055,
                 Color = Colors.Black
             }
@@ -165,12 +156,12 @@ public partial class MainWindow : Window
         {
             Content = label,
             Padding = compact
-                ? new Thickness(13, 8, 13, 8)
-                : new Thickness(19, 12, 19, 12),
+                ? new Thickness(15, 9, 15, 9)
+                : new Thickness(21, 13, 21, 13),
             Margin = new Thickness(0, 5, 9, 5),
             FontSize = compact ? 12 : 14,
             FontWeight = FontWeights.SemiBold,
-            Background = primary ? forest : paleSage,
+            Background = primary ? forest : sage,
             Foreground = primary ? white : forest,
             BorderThickness = new Thickness(0),
             Cursor = Cursors.Hand,
@@ -181,10 +172,13 @@ public partial class MainWindow : Window
 
         var template = new ControlTemplate(typeof(Button));
         var border = new FrameworkElementFactory(typeof(Border));
-        border.SetValue(Border.CornerRadiusProperty, new CornerRadius(11));
-        border.SetValue(Border.BackgroundProperty,
+
+        border.SetValue(Border.CornerRadiusProperty, new CornerRadius(15));
+        border.SetValue(
+            Border.BackgroundProperty,
             new TemplateBindingExtension(Control.BackgroundProperty));
-        border.SetValue(Border.PaddingProperty,
+        border.SetValue(
+            Border.PaddingProperty,
             new TemplateBindingExtension(Control.PaddingProperty));
 
         var presenter = new FrameworkElementFactory(typeof(ContentPresenter));
@@ -199,36 +193,28 @@ public partial class MainWindow : Window
         template.VisualTree = border;
         button.Template = template;
 
-        button.MouseEnter += (_, _) =>
-        {
-            button.Opacity = 0.83;
-        };
-
-        button.MouseLeave += (_, _) =>
-        {
-            button.Opacity = 1;
-        };
-
+        button.MouseEnter += (_, _) => button.Opacity = 0.82;
+        button.MouseLeave += (_, _) => button.Opacity = 1;
         button.Click += (_, _) => action();
 
         return button;
     }
 
-    private TextBox MakeTextBox(string placeholder = "")
+    private TextBox MakeTextBox(string tip = "")
     {
         return new TextBox
         {
             FontSize = 15,
-            Padding = new Thickness(13),
-            Margin = new Thickness(0, 5, 0, 13),
-            Background = white,
+            Padding = new Thickness(15, 12, 15, 12),
+            Margin = new Thickness(0, 6, 0, 14),
+            Background = B("#FAFBF8"),
             Foreground = ink,
-            BorderBrush = B("#DCE3D9"),
+            BorderBrush = B("#E0E7DD"),
             BorderThickness = new Thickness(1),
             FontFamily = new FontFamily("Segoe UI"),
-            Height = 45,
+            Height = 48,
             VerticalContentAlignment = VerticalAlignment.Center,
-            ToolTip = placeholder
+            ToolTip = tip
         };
     }
 
@@ -237,72 +223,61 @@ public partial class MainWindow : Window
         return new PasswordBox
         {
             FontSize = 15,
-            Padding = new Thickness(13),
-            Margin = new Thickness(0, 5, 0, 13),
-            Background = white,
+            Padding = new Thickness(15, 12, 15, 12),
+            Margin = new Thickness(0, 6, 0, 14),
+            Background = B("#FAFBF8"),
             Foreground = ink,
-            BorderBrush = B("#DCE3D9"),
+            BorderBrush = B("#E0E7DD"),
             BorderThickness = new Thickness(1),
             FontFamily = new FontFamily("Segoe UI"),
-            Height = 45,
+            Height = 48,
             VerticalContentAlignment = VerticalAlignment.Center
         };
     }
 
-    private StackPanel VerticalStack(double spacing = 0)
+    private Border Pill(string label, Brush? bg = null, Brush? fg = null)
     {
-        return new StackPanel
+        return new Border
         {
-            Orientation = Orientation.Vertical,
-            Margin = new Thickness(0),
+            Background = bg ?? sage,
+            CornerRadius = new CornerRadius(30),
+            Padding = new Thickness(12, 6, 12, 6),
+            HorizontalAlignment = HorizontalAlignment.Left,
+            Child = T(label, 10, true, fg ?? forest)
         };
     }
 
-    private void AddPageHeading(
-        Panel panel,
-        string title,
-        string subtitle)
+    private void AddHeading(Panel panel, string title, string subtitle)
     {
         panel.Children.Add(T(title, 31, true, forest));
         panel.Children.Add(T(subtitle, 15, false, muted));
 
         panel.Children.Add(new Border
         {
-            Height = 2,
-            Width = 55,
-            HorizontalAlignment = HorizontalAlignment.Left,
+            Width = 48,
+            Height = 3,
             Background = gold,
-            Margin = new Thickness(0, 12, 0, 22)
+            HorizontalAlignment = HorizontalAlignment.Left,
+            CornerRadius = new CornerRadius(2),
+            Margin = new Thickness(0, 13, 0, 22)
         });
     }
 
-    private Border Pill(string text, Brush background, Brush foreground)
-    {
-        return new Border
-        {
-            Background = background,
-            CornerRadius = new CornerRadius(20),
-            Padding = new Thickness(12, 5, 12, 5),
-            Child = T(text, 11, true, foreground),
-            HorizontalAlignment = HorizontalAlignment.Left
-        };
-    }
-
-    private ProgressBar MakeProgress(double value, double maximum = 5)
+    private ProgressBar MakeProgress(double value)
     {
         return new ProgressBar
         {
             Minimum = 0,
-            Maximum = maximum,
-            Value = Math.Clamp(value, 0, maximum),
-            Height = 9,
-            Background = paleSage,
+            Maximum = 5,
+            Value = Math.Clamp(value, 0, 5),
+            Height = 10,
+            Background = sage,
             Foreground = forest,
             BorderThickness = new Thickness(0)
         };
     }
 
-    private Grid TwoColumn(UIElement left, UIElement right)
+    private Grid TwoColumn(UIElement left, UIElement right, double gap = 14)
     {
         var grid = new Grid();
 
@@ -311,6 +286,14 @@ public partial class MainWindow : Window
 
         grid.ColumnDefinitions.Add(
             new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+        left.SetValue(
+            FrameworkElement.MarginProperty,
+            new Thickness(0, 0, gap / 2, 0));
+
+        right.SetValue(
+            FrameworkElement.MarginProperty,
+            new Thickness(gap / 2, 0, 0, 0));
 
         Grid.SetColumn(left, 0);
         Grid.SetColumn(right, 1);
@@ -321,9 +304,143 @@ public partial class MainWindow : Window
         return grid;
     }
 
-    // ------------------------------------------------------------
-    // LOCAL STORAGE
-    // ------------------------------------------------------------
+    // =========================================================
+    // CUSTOM ILLUSTRATIONS
+    // =========================================================
+
+    private void AddHedgehog(Canvas canvas, double x, double y, double scale = 1)
+    {
+        var spikes = new Ellipse
+        {
+            Width = 94 * scale,
+            Height = 65 * scale,
+            Fill = B("#665348"),
+            Stroke = B("#514237"),
+            StrokeThickness = 1
+        };
+
+        Canvas.SetLeft(spikes, x);
+        Canvas.SetTop(spikes, y);
+        canvas.Children.Add(spikes);
+
+        for (int i = 0; i < 9; i++)
+        {
+            var spike = new Line
+            {
+                X1 = x + (10 + i * 9) * scale,
+                Y1 = y + 13 * scale,
+                X2 = x + (5 + i * 10) * scale,
+                Y2 = y - (3 + (i % 3) * 5) * scale,
+                Stroke = B("#493A32"),
+                StrokeThickness = 3 * scale,
+                StrokeStartLineCap = PenLineCap.Round,
+                StrokeEndLineCap = PenLineCap.Round
+            };
+
+            canvas.Children.Add(spike);
+        }
+
+        var face = new Ellipse
+        {
+            Width = 54 * scale,
+            Height = 43 * scale,
+            Fill = B("#E6B98D")
+        };
+
+        Canvas.SetLeft(face, x + 53 * scale);
+        Canvas.SetTop(face, y + 21 * scale);
+        canvas.Children.Add(face);
+
+        var ear = new Ellipse
+        {
+            Width = 15 * scale,
+            Height = 15 * scale,
+            Fill = B("#D99D7C")
+        };
+
+        Canvas.SetLeft(ear, x + 65 * scale);
+        Canvas.SetTop(ear, y + 15 * scale);
+        canvas.Children.Add(ear);
+
+        var eye = new Ellipse
+        {
+            Width = 5 * scale,
+            Height = 5 * scale,
+            Fill = ink
+        };
+
+        Canvas.SetLeft(eye, x + 91 * scale);
+        Canvas.SetTop(eye, y + 35 * scale);
+        canvas.Children.Add(eye);
+
+        var nose = new Ellipse
+        {
+            Width = 9 * scale,
+            Height = 7 * scale,
+            Fill = B("#493A32")
+        };
+
+        Canvas.SetLeft(nose, x + 104 * scale);
+        Canvas.SetTop(nose, y + 46 * scale);
+        canvas.Children.Add(nose);
+    }
+
+    private void AddCactus(Canvas canvas, double x, double y, double scale = 1)
+    {
+        Brush cactus = B("#78A27A");
+
+        var pot = new Border
+        {
+            Width = 42 * scale,
+            Height = 27 * scale,
+            Background = B("#C78E67"),
+            CornerRadius = new CornerRadius(4, 4, 9, 9)
+        };
+
+        Canvas.SetLeft(pot, x + 9 * scale);
+        Canvas.SetTop(pot, y + 70 * scale);
+        canvas.Children.Add(pot);
+
+        var body = new Border
+        {
+            Width = 25 * scale,
+            Height = 76 * scale,
+            Background = cactus,
+            CornerRadius = new CornerRadius(13 * scale)
+        };
+
+        Canvas.SetLeft(body, x + 17 * scale);
+        Canvas.SetTop(body, y);
+        canvas.Children.Add(body);
+
+        var arm = new Border
+        {
+            Width = 30 * scale,
+            Height = 13 * scale,
+            Background = cactus,
+            CornerRadius = new CornerRadius(8 * scale)
+        };
+
+        Canvas.SetLeft(arm, x - 1 * scale);
+        Canvas.SetTop(arm, y + 35 * scale);
+        canvas.Children.Add(arm);
+
+        var armUp = new Border
+        {
+            Width = 13 * scale,
+            Height = 27 * scale,
+            Background = cactus,
+            CornerRadius = new CornerRadius(7 * scale)
+        };
+
+        Canvas.SetLeft(armUp, x - 1 * scale);
+        Canvas.SetTop(armUp, y + 16 * scale);
+        canvas.Children.Add(armUp);
+    }
+
+    // =========================================================
+    // LOCAL STORAGE AND ACCOUNTS
+    // =========================================================
 
     private void LoadProgress()
     {
@@ -401,10 +518,6 @@ public partial class MainWindow : Window
         return new();
     }
 
-    // ------------------------------------------------------------
-    // ACCOUNT SYSTEM
-    // ------------------------------------------------------------
-
     private bool Authenticate(
         string name,
         string password,
@@ -415,8 +528,7 @@ public partial class MainWindow : Window
 
         if (register &&
             (name.Length < 3 || name.Length > 20 ||
-             name.Any(c => !char.IsLetterOrDigit(c) &&
-                           c != '_' && c != '-')))
+             name.Any(c => !char.IsLetterOrDigit(c) && c != '_' && c != '-')))
         {
             message = "Your username must be 3–20 characters. Use letters, numbers, _ or -.";
             return false;
@@ -463,7 +575,6 @@ public partial class MainWindow : Window
             try
             {
                 Directory.CreateDirectory(folder);
-
                 File.WriteAllText(
                     AccountsFile,
                     JsonSerializer.Serialize(accounts));
@@ -487,19 +598,17 @@ public partial class MainWindow : Window
 
         try
         {
-            byte[] storedSalt = Convert.FromBase64String(account.Salt);
-            byte[] storedHash = Convert.FromBase64String(account.Hash);
+            byte[] salt = Convert.FromBase64String(account.Salt);
+            byte[] stored = Convert.FromBase64String(account.Hash);
 
-            byte[] enteredHash = Rfc2898DeriveBytes.Pbkdf2(
+            byte[] entered = Rfc2898DeriveBytes.Pbkdf2(
                 password,
-                storedSalt,
+                salt,
                 120000,
                 HashAlgorithmName.SHA256,
                 32);
 
-            if (!CryptographicOperations.FixedTimeEquals(
-                storedHash,
-                enteredHash))
+            if (!CryptographicOperations.FixedTimeEquals(stored, entered))
             {
                 message = "That password isn't correct. Please try again.";
                 return false;
@@ -516,6 +625,10 @@ public partial class MainWindow : Window
         return true;
     }
 
+    // =========================================================
+    // LOGIN SCREEN
+    // =========================================================
+
     private void ShowLogin()
     {
         StopGame();
@@ -523,104 +636,112 @@ public partial class MainWindow : Window
         Root.Children.Clear();
         Root.Background = cream;
 
-        var outer = new Grid
-        {
-            Margin = new Thickness(35)
-        };
+        var layout = new Grid { Margin = new Thickness(34) };
 
-        outer.ColumnDefinitions.Add(
+        layout.ColumnDefinitions.Add(
             new ColumnDefinition { Width = new GridLength(1.05, GridUnitType.Star) });
 
-        outer.ColumnDefinitions.Add(
+        layout.ColumnDefinitions.Add(
             new ColumnDefinition { Width = new GridLength(0.95, GridUnitType.Star) });
 
-        // LEFT INTRODUCTION PANEL
-
-        var intro = new Border
+        var left = new Border
         {
-            Background = forest,
-            CornerRadius = new CornerRadius(26),
-            Padding = new Thickness(45),
-            Margin = new Thickness(0, 0, 22, 0)
+            Background = deepForest,
+            CornerRadius = new CornerRadius(30),
+            Padding = new Thickness(48),
+            Margin = new Thickness(0, 0, 16, 0),
+            ClipToBounds = true
         };
+
+        var intro = new Grid();
 
         var introStack = new StackPanel
         {
-            VerticalAlignment = VerticalAlignment.Center
+            VerticalAlignment = VerticalAlignment.Center,
+            MaxWidth = 490
         };
 
-        introStack.Children.Add(
-            T("🌵  CYBER CACTI", 17, true, B("#E7EEDB")));
+        introStack.Children.Add(T("🌵  CYBER CACTI", 14, true, B("#DCE8D8")));
+        introStack.Children.Add(T("Small actions.\nBig impact.", 47, true, white));
 
-        introStack.Children.Add(
-            T("Small actions.\nBig impact.", 43, true, white));
-
-        introStack.Children.Add(
-            T(
-                "Helping create a safer world for hedgehogs, one action at a time.",
-                19,
-                false,
-                B("#D7E2D5")));
+        introStack.Children.Add(T(
+            "Helping create a safer world for hedgehogs, one action at a time.",
+            18,
+            false,
+            B("#D5E2D5")));
 
         introStack.Children.Add(new Border
         {
-            Width = 65,
             Height = 3,
-            HorizontalAlignment = HorizontalAlignment.Left,
+            Width = 54,
             Background = gold,
-            Margin = new Thickness(0, 20, 0, 20)
+            HorizontalAlignment = HorizontalAlignment.Left,
+            Margin = new Thickness(0, 22, 0, 20)
         });
 
-        introStack.Children.Add(
-            T("LEARN  •  PROTECT  •  MAKE A DIFFERENCE",
-                11, true, B("#D7E2D5")));
+        introStack.Children.Add(T(
+            "LEARN  ·  PROTECT  ·  MAKE A DIFFERENCE",
+            10,
+            true,
+            B("#D5E2D5")));
 
-        intro.Child = introStack;
+        intro.Children.Add(introStack);
 
-        Grid.SetColumn(intro, 0);
-        outer.Children.Add(intro);
+        var art = new Canvas
+        {
+            Width = 240,
+            Height = 160,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            VerticalAlignment = VerticalAlignment.Bottom,
+            Margin = new Thickness(0, 0, 4, 5),
+            IsHitTestVisible = false
+        };
 
-        // RIGHT ACCOUNT PANEL
+        AddCactus(art, 30, 42, 1.1);
+        AddHedgehog(art, 105, 76, 0.85);
+
+        intro.Children.Add(art);
+        left.Child = intro;
+
+        Grid.SetColumn(left, 0);
+        layout.Children.Add(left);
 
         var form = new StackPanel
         {
             VerticalAlignment = VerticalAlignment.Center
         };
 
-        var title = T("Welcome to Cyber Cacti", 28, true, forest);
-        var subtitle = T("Sign in to continue your journey.", 14, false, muted);
+        form.Children.Add(T("Welcome to Cyber Cacti", 29, true, forest));
+        form.Children.Add(T(
+            "Sign in to continue your journey.",
+            14,
+            false,
+            muted));
 
-        form.Children.Add(title);
-        form.Children.Add(subtitle);
-
-        var modeButtons = new StackPanel
+        var modes = new StackPanel
         {
             Orientation = Orientation.Horizontal,
-            Margin = new Thickness(0, 17, 0, 16)
+            Margin = new Thickness(0, 18, 0, 17)
         };
 
-        var signInMode = Btn("Sign in", () =>
-        {
-            registering = false;
-            ShowLogin();
-        }, !registering);
+        modes.Children.Add(Btn(
+            "Sign in",
+            () => { registering = false; ShowLogin(); },
+            !registering));
 
-        var createMode = Btn("Create account", () =>
-        {
-            registering = true;
-            ShowLogin();
-        }, registering);
+        modes.Children.Add(Btn(
+            "Create account",
+            () => { registering = true; ShowLogin(); },
+            registering));
 
-        modeButtons.Children.Add(signInMode);
-        modeButtons.Children.Add(createMode);
-        form.Children.Add(modeButtons);
+        form.Children.Add(modes);
 
-        form.Children.Add(T("Username", 13, true, ink));
+        form.Children.Add(T("Username", 12, true));
 
         var name = MakeTextBox("Enter your username");
         form.Children.Add(name);
 
-        form.Children.Add(T("Password", 13, true, ink));
+        form.Children.Add(T("Password", 12, true));
 
         var password = MakePasswordBox();
         form.Children.Add(password);
@@ -629,17 +750,19 @@ public partial class MainWindow : Window
 
         if (registering)
         {
-            form.Children.Add(T("Confirm password", 13, true, ink));
+            form.Children.Add(T("Confirm password", 12, true));
+
             confirm = MakePasswordBox();
             form.Children.Add(confirm);
 
-            form.Children.Add(
-                T("Use at least 8 characters for your password.",
-                    11, false, muted));
+            form.Children.Add(T(
+                "Use at least 8 characters.",
+                11,
+                false,
+                muted));
         }
 
-        var feedback = T("", 12, true, danger);
-        feedback.Margin = new Thickness(0, 8, 0, 8);
+        var feedback = T("", 12, true, red);
         form.Children.Add(feedback);
 
         var submit = Btn(
@@ -673,21 +796,20 @@ public partial class MainWindow : Window
         submit.HorizontalAlignment = HorizontalAlignment.Stretch;
         form.Children.Add(submit);
 
-        form.Children.Add(
-            T(
-                "Your account and progress are stored locally on this computer.",
-                11,
-                false,
-                muted));
+        form.Children.Add(T(
+            "Your account and progress are stored locally on this computer.",
+            11,
+            false,
+            muted));
 
-        var panel = Card(form, new Thickness(30));
-        panel.Margin = new Thickness(22, 0, 0, 0);
-        panel.VerticalAlignment = VerticalAlignment.Center;
+        var card = Card(form, new Thickness(34));
+        card.Margin = new Thickness(16, 0, 0, 0);
+        card.VerticalAlignment = VerticalAlignment.Center;
 
-        Grid.SetColumn(panel, 1);
-        outer.Children.Add(panel);
+        Grid.SetColumn(card, 1);
+        layout.Children.Add(card);
 
-        Root.Children.Add(outer);
+        Root.Children.Add(layout);
 
         name.Focus();
 
@@ -698,9 +820,9 @@ public partial class MainWindow : Window
         };
     }
 
-    // ------------------------------------------------------------
-    // MAIN APP SHELL
-    // ------------------------------------------------------------
+    // =========================================================
+    // MAIN APPLICATION AND NAVIGATION
+    // =========================================================
 
     private void ShowApp(string page = "Home")
     {
@@ -712,41 +834,24 @@ public partial class MainWindow : Window
         var shell = new Grid();
 
         shell.ColumnDefinitions.Add(
-            new ColumnDefinition { Width = new GridLength(245) });
+            new ColumnDefinition { Width = new GridLength(252) });
 
         shell.ColumnDefinitions.Add(
             new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
-        // SIDEBAR
+        var sidebar = new Grid { Background = deepForest };
 
-        var sidebar = new Grid
-        {
-            Background = deepForest
-        };
-
-        sidebar.RowDefinitions.Add(new RowDefinition
-        {
-            Height = GridLength.Auto
-        });
-
-        sidebar.RowDefinitions.Add(new RowDefinition
-        {
-            Height = new GridLength(1, GridUnitType.Star)
-        });
-
-        sidebar.RowDefinitions.Add(new RowDefinition
-        {
-            Height = GridLength.Auto
-        });
+        sidebar.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        sidebar.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+        sidebar.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
         var brand = new StackPanel
         {
-            Margin = new Thickness(24, 30, 20, 27)
+            Margin = new Thickness(25, 29, 20, 28)
         };
 
-        brand.Children.Add(T("🌵  CYBER CACTI", 20, true, white));
-        brand.Children.Add(
-            T("HEDGEHOG AWARENESS PROJECT", 9, true, B("#C6D5C6")));
+        brand.Children.Add(T("🌵  CYBER CACTI", 19, true, white));
+        brand.Children.Add(T("HEDGEHOG AWARENESS", 9, true, B("#BFD0C1")));
 
         Grid.SetRow(brand, 0);
         sidebar.Children.Add(brand);
@@ -775,6 +880,8 @@ public partial class MainWindow : Window
             "Dash Game"
         };
 
+        navButtons.Clear();
+
         foreach (string item in pages)
             nav.Children.Add(CreateNavButton(item));
 
@@ -785,26 +892,29 @@ public partial class MainWindow : Window
 
         var userPanel = new Border
         {
-            Background = B("#1E4435"),
-            Padding = new Thickness(17),
+            Background = B("#214536"),
+            Padding = new Thickness(16),
             Margin = new Thickness(13, 10, 13, 18),
-            CornerRadius = new CornerRadius(13)
+            CornerRadius = new CornerRadius(18)
         };
 
         var userStack = new StackPanel();
 
-        userStack.Children.Add(T("SIGNED IN AS", 9, true, B("#B9CABB")));
+        userStack.Children.Add(T("SIGNED IN AS", 9, true, B("#BFD0C1")));
         userStack.Children.Add(T(username, 15, true, white));
 
-        var signOut = Btn("Sign out", () =>
-        {
-            username = "";
-            content = null;
-            ShowLogin();
-        }, false, true);
+        var signOut = Btn(
+            "Sign out",
+            () =>
+            {
+                username = "";
+                ShowLogin();
+            },
+            false,
+            true);
 
-        signOut.Background = B("#DCE8D8");
-        signOut.Margin = new Thickness(0, 9, 0, 0);
+        signOut.Background = B("#DDE9D9");
+        signOut.Margin = new Thickness(0, 10, 0, 0);
 
         userStack.Children.Add(signOut);
         userPanel.Child = userStack;
@@ -812,29 +922,17 @@ public partial class MainWindow : Window
         Grid.SetRow(userPanel, 2);
         sidebar.Children.Add(userPanel);
 
-        // MAIN CONTENT AREA
+        var main = new Grid { Background = cream };
 
-        var main = new Grid
-        {
-            Background = cream
-        };
+        main.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        main.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
 
-        main.RowDefinitions.Add(new RowDefinition
-        {
-            Height = GridLength.Auto
-        });
-
-        main.RowDefinitions.Add(new RowDefinition
-        {
-            Height = new GridLength(1, GridUnitType.Star)
-        });
-
-        var topBar = new Border
+        var top = new Border
         {
             Background = white,
             BorderBrush = line,
             BorderThickness = new Thickness(0, 0, 0, 1),
-            Padding = new Thickness(28, 16, 28, 16)
+            Padding = new Thickness(30, 17, 30, 17)
         };
 
         var topGrid = new Grid();
@@ -845,37 +943,30 @@ public partial class MainWindow : Window
         topGrid.ColumnDefinitions.Add(
             new ColumnDefinition { Width = GridLength.Auto });
 
-        var topLeft = new StackPanel();
+        var topText = new StackPanel();
 
-        topLeft.Children.Add(
-            T("YOUR HEDGEHOG CONSERVATION SPACE", 10, true, muted));
+        topText.Children.Add(T("YOUR HEDGEHOG CONSERVATION SPACE", 9, true, muted));
+        topText.Children.Add(T("Welcome back, " + username, 17, true, forest));
 
-        topLeft.Children.Add(
-            T("Welcome, " + username, 17, true, forest));
+        Grid.SetColumn(topText, 0);
+        topGrid.Children.Add(topText);
 
-        Grid.SetColumn(topLeft, 0);
-        topGrid.Children.Add(topLeft);
+        var profile = Pill("●  LOCAL PROFILE", pale, forest);
+        profile.VerticalAlignment = VerticalAlignment.Center;
 
-        var topRight = Pill(
-            "●  LOCAL PROFILE",
-            paleGreen,
-            forest);
+        Grid.SetColumn(profile, 1);
+        topGrid.Children.Add(profile);
 
-        topRight.VerticalAlignment = VerticalAlignment.Center;
+        top.Child = topGrid;
 
-        Grid.SetColumn(topRight, 1);
-        topGrid.Children.Add(topRight);
-
-        topBar.Child = topGrid;
-
-        Grid.SetRow(topBar, 0);
-        main.Children.Add(topBar);
+        Grid.SetRow(top, 0);
+        main.Children.Add(top);
 
         var scroll = new ScrollViewer
         {
             VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
             HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
-            Padding = new Thickness(30, 25, 30, 25)
+            Padding = new Thickness(30, 27, 30, 25)
         };
 
         content = new Grid
@@ -902,27 +993,46 @@ public partial class MainWindow : Window
 
     private Button CreateNavButton(string item)
     {
+        string glyph = item switch
+        {
+            "Home" => "⌂",
+            "Dashboard" => "▦",
+            "About Us" => "○",
+            "Hedgehogs" => "✿",
+            "How to Help" => "✓",
+            "More" => "···",
+            "Innovation Project" => "✧",
+            "Contact Us" => "✉",
+            "Dash Game" => "▶",
+            _ => "•"
+        };
+
         var button = new Button
         {
-            Content = item,
+            Content = glyph + "     " + item,
             HorizontalContentAlignment = HorizontalAlignment.Left,
-            Padding = new Thickness(16, 12, 12, 12),
+            Padding = new Thickness(16, 13, 12, 13),
             Margin = new Thickness(0, 3, 0, 3),
-            Background = Brushes.Transparent,
-            Foreground = B("#E3EBE2"),
+            Background = item == currentPage ? B("#315B47") : Brushes.Transparent,
+            Foreground = item == currentPage ? white : B("#DCE7DC"),
             BorderThickness = new Thickness(0),
             FontSize = 13,
-            FontWeight = FontWeights.Medium,
+            FontWeight = item == currentPage
+                ? FontWeights.SemiBold
+                : FontWeights.Medium,
             Cursor = Cursors.Hand,
             FontFamily = new FontFamily("Segoe UI")
         };
 
         var template = new ControlTemplate(typeof(Button));
         var border = new FrameworkElementFactory(typeof(Border));
-        border.SetValue(Border.CornerRadiusProperty, new CornerRadius(10));
-        border.SetValue(Border.BackgroundProperty,
+
+        border.SetValue(Border.CornerRadiusProperty, new CornerRadius(13));
+        border.SetValue(
+            Border.BackgroundProperty,
             new TemplateBindingExtension(Control.BackgroundProperty));
-        border.SetValue(Border.PaddingProperty,
+        border.SetValue(
+            Border.PaddingProperty,
             new TemplateBindingExtension(Control.PaddingProperty));
 
         var presenter = new FrameworkElementFactory(typeof(ContentPresenter));
@@ -942,7 +1052,7 @@ public partial class MainWindow : Window
         button.MouseEnter += (_, _) =>
         {
             if (currentPage != item)
-                button.Background = B("#315847");
+                button.Background = B("#294C3B");
         };
 
         button.MouseLeave += (_, _) =>
@@ -951,12 +1061,25 @@ public partial class MainWindow : Window
                 button.Background = Brushes.Transparent;
         };
 
+        navButtons.Add(button);
+
         return button;
     }
 
-    // ------------------------------------------------------------
-    // PAGE NAVIGATION
-    // ------------------------------------------------------------
+    private void UpdateNavigation()
+    {
+        foreach (var button in navButtons)
+        {
+            string label = button.Content?.ToString() ?? "";
+            bool selected = label.EndsWith(currentPage);
+
+            button.Background = selected ? B("#315B47") : Brushes.Transparent;
+            button.Foreground = selected ? white : B("#DCE7DC");
+            button.FontWeight = selected
+                ? FontWeights.SemiBold
+                : FontWeights.Medium;
+        }
+    }
 
     private void ShowPage(string page)
     {
@@ -966,6 +1089,8 @@ public partial class MainWindow : Window
         StopGame();
 
         currentPage = page;
+        UpdateNavigation();
+
         content.Children.Clear();
 
         var stack = new StackPanel
@@ -1020,185 +1145,224 @@ public partial class MainWindow : Window
         }
     }
 
-    // ------------------------------------------------------------
-    // HOME PAGE
-    // ------------------------------------------------------------
+    // =========================================================
+    // HOME
+    // =========================================================
 
     private void BuildHome(StackPanel stack)
     {
         var hero = new Border
         {
-            Background = forest,
-            CornerRadius = new CornerRadius(22),
+            Background = deepForest,
+            CornerRadius = new CornerRadius(28),
             Padding = new Thickness(34),
-            Margin = new Thickness(0, 0, 0, 20)
+            Margin = new Thickness(0, 0, 0, 22),
+            ClipToBounds = true
         };
 
-        var heroContent = new StackPanel();
+        var grid = new Grid();
 
-        heroContent.Children.Add(
-            Pill("WELCOME TO CYBER CACTI", B("#DCE8D8"), forest));
+        grid.ColumnDefinitions.Add(
+            new ColumnDefinition { Width = new GridLength(1.25, GridUnitType.Star) });
 
-        heroContent.Children.Add(
-            T("Small actions.\nBig impact.", 38, true, white));
+        grid.ColumnDefinitions.Add(
+            new ColumnDefinition { Width = new GridLength(0.75, GridUnitType.Star) });
 
-        heroContent.Children.Add(
-            T(
-                "Helping hedgehogs thrive by making everyday spaces safer for wildlife.",
-                17,
-                false,
-                B("#E0E9DF")));
+        var copy = new StackPanel
+        {
+            VerticalAlignment = VerticalAlignment.Center
+        };
 
-        heroContent.Children.Add(
-            Btn("Discover how to help  →",
-                () => ShowPage("How to Help"),
-                true));
+        copy.Children.Add(Pill("WELCOME TO CYBER CACTI", B("#DCE8D8"), forest));
+        copy.Children.Add(T("Small actions.\nBig impact.", 39, true, white));
 
-        hero.Child = heroContent;
+        copy.Children.Add(T(
+            "Helping hedgehogs thrive by making everyday spaces safer for wildlife.",
+            16,
+            false,
+            B("#D9E5D9")));
+
+        copy.Children.Add(Btn(
+            "Explore how to help  →",
+            () => ShowPage("How to Help"),
+            true));
+
+        Grid.SetColumn(copy, 0);
+        grid.Children.Add(copy);
+
+        var artPanel = new Border
+        {
+            Background = B("#294F3D"),
+            CornerRadius = new CornerRadius(24),
+            Margin = new Thickness(14, 0, 0, 0)
+        };
+
+        var art = new Canvas
+        {
+            Height = 205,
+            ClipToBounds = true
+        };
+
+        var sun = new Ellipse
+        {
+            Width = 100,
+            Height = 100,
+            Fill = B("#D9B778"),
+            Opacity = 0.9
+        };
+
+        Canvas.SetLeft(sun, 140);
+        Canvas.SetTop(sun, 17);
+        art.Children.Add(sun);
+
+        AddCactus(art, 42, 54, 1.25);
+        AddHedgehog(art, 135, 115, 0.85);
+
+        artPanel.Child = art;
+
+        Grid.SetColumn(artPanel, 1);
+        grid.Children.Add(artPanel);
+
+        hero.Child = grid;
         stack.Children.Add(hero);
 
-        AddPageHeading(
+        AddHeading(
             stack,
             "Your conservation journey",
             "Every small step can make a difference.");
 
-        int completed = tasks.Count(x => x);
+        int done = tasks.Count(x => x);
 
-        var progressCard = new StackPanel();
+        var progress = new StackPanel();
 
-        progressCard.Children.Add(
-            T("YOUR PROGRESS", 11, true, muted));
+        progress.Children.Add(T("YOUR PROGRESS", 10, true, muted));
+        progress.Children.Add(T($"{done} of 5 actions completed", 23, true, forest));
+        progress.Children.Add(MakeProgress(done));
 
-        progressCard.Children.Add(
-            T($"{completed} out of 5 actions completed", 22, true, forest));
+        progress.Children.Add(T(
+            done == 5
+                ? "Fantastic work! You've completed every suggested action."
+                : "Keep going. Each action helps make outdoor spaces safer.",
+            13,
+            false,
+            muted));
 
-        progressCard.Children.Add(MakeProgress(completed));
-
-        progressCard.Children.Add(
-            T(
-                completed == 5
-                    ? "Fantastic work! You've completed every suggested action."
-                    : "Keep going. Each action helps make outdoor spaces safer.",
-                13,
-                false,
-                muted));
-
-        stack.Children.Add(Card(progressCard));
+        stack.Children.Add(Card(progress));
 
         var left = new StackPanel();
+
         left.Children.Add(T("Explore hedgehogs", 19, true, forest));
-        left.Children.Add(
-            T("Discover their habits, habitats and the challenges they face.",
-                14, false, muted));
-        left.Children.Add(
-            Btn("Meet the hedgehogs  →",
-                () => ShowPage("Hedgehogs")));
+        left.Children.Add(T(
+            "Discover their habits, habitats and the challenges they face.",
+            13,
+            false,
+            muted));
+
+        left.Children.Add(Btn(
+            "Meet the hedgehogs  →",
+            () => ShowPage("Hedgehogs")));
 
         var right = new StackPanel();
+
         right.Children.Add(T("Your dashboard", 19, true, forest));
-        right.Children.Add(
-            T("See your completed actions and your personal progress.",
-                14, false, muted));
-        right.Children.Add(
-            Btn("View dashboard  →",
-                () => ShowPage("Dashboard")));
+        right.Children.Add(T(
+            "See your completed actions and personal progress.",
+            13,
+            false,
+            muted));
+
+        right.Children.Add(Btn(
+            "View dashboard  →",
+            () => ShowPage("Dashboard")));
 
         stack.Children.Add(Card(TwoColumn(left, right)));
     }
 
-    // ------------------------------------------------------------
+    // =========================================================
     // DASHBOARD
-    // ------------------------------------------------------------
+    // =========================================================
 
     private void BuildDashboard(StackPanel stack)
     {
-        AddPageHeading(
+        AddHeading(
             stack,
             "Your Dashboard",
             "A snapshot of your Cyber Cacti journey.");
 
-        int completed = tasks.Count(x => x);
+        int done = tasks.Count(x => x);
 
-        var stat1 = new StackPanel();
-        stat1.Children.Add(T("ACTIONS COMPLETED", 10, true, muted));
-        stat1.Children.Add(T(completed.ToString(), 36, true, forest));
-        stat1.Children.Add(T("Out of 5 suggested actions", 12, false, muted));
+        var a = new StackPanel();
+        a.Children.Add(T("ACTIONS COMPLETED", 10, true, muted));
+        a.Children.Add(T(done.ToString(), 37, true, forest));
+        a.Children.Add(T("Out of 5 suggested actions", 12, false, muted));
 
-        var stat2 = new StackPanel();
-        stat2.Children.Add(T("GAME HIGH SCORE", 10, true, muted));
-        stat2.Children.Add(T(highScore.ToString(), 36, true, forest));
-        stat2.Children.Add(T("Your best Dash Game result", 12, false, muted));
+        var b = new StackPanel();
+        b.Children.Add(T("GAME HIGH SCORE", 10, true, muted));
+        b.Children.Add(T(highScore.ToString(), 37, true, forest));
+        b.Children.Add(T("Your best Dash Game result", 12, false, muted));
 
-        stack.Children.Add(
-            Card(TwoColumn(stat1, stat2)));
+        stack.Children.Add(Card(TwoColumn(a, b)));
 
         var progress = new StackPanel();
 
         progress.Children.Add(T("Your impact", 21, true, forest));
-        progress.Children.Add(
-            T($"{completed} / 5 actions completed", 15, true, ink));
+        progress.Children.Add(T($"{done} / 5 actions completed", 14, true));
+        progress.Children.Add(MakeProgress(done));
 
-        progress.Children.Add(MakeProgress(completed));
+        progress.Children.Add(T(
+            done == 5
+                ? "You've completed all five actions. Thank you for helping wildlife."
+                : "There are still more ways to make a difference. Open your checklist to continue.",
+            13,
+            false,
+            muted));
 
-        progress.Children.Add(
-            T(
-                completed == 5
-                    ? "You've completed all five actions. Thank you for helping wildlife."
-                    : "There are still more ways to make a difference. Open your checklist to continue.",
-                14,
-                false,
-                muted));
-
-        progress.Children.Add(
-            Btn("Open my checklist  →",
-                () => ShowPage("How to Help"),
-                true));
+        progress.Children.Add(Btn(
+            "Open my checklist  →",
+            () => ShowPage("How to Help"),
+            true));
 
         stack.Children.Add(Card(progress));
 
         var fact = new StackPanel();
 
-        fact.Children.Add(T("DID YOU KNOW?", 10, true, gold));
-        fact.Children.Add(T("Hedgehog fact", 21, true, forest));
-        fact.Children.Add(
-            T(
-                "Hedgehogs are nocturnal mammals. They are generally most active at night, when they search for food and explore their surroundings.",
-                15));
+        fact.Children.Add(Pill("DID YOU KNOW?", B("#F6EEDC"), gold));
+        fact.Children.Add(T("Hedgehogs are night explorers", 21, true, forest));
+
+        fact.Children.Add(T(
+            "Hedgehogs are nocturnal mammals. They are generally most active at night, when they search for food and explore their surroundings.",
+            14));
 
         stack.Children.Add(Card(fact));
 
         var mission = new StackPanel();
 
         mission.Children.Add(T("Your next mission", 20, true, forest));
-        mission.Children.Add(
-            T(
-                "Choose one wildlife-friendly action to work on this week. Small changes in gardens and outdoor spaces can help hedgehogs.",
-                14,
-                false,
-                muted));
+
+        mission.Children.Add(T(
+            "Choose one wildlife-friendly action to work on this week. Small changes in gardens and outdoor spaces can help hedgehogs.",
+            14,
+            false,
+            muted));
 
         stack.Children.Add(Card(mission));
     }
 
-    // ------------------------------------------------------------
+    // =========================================================
     // ABOUT US
-    // ------------------------------------------------------------
+    // =========================================================
 
     private void BuildAbout(StackPanel stack)
     {
-        AddPageHeading(
-            stack,
-            "About Us",
-            "Why Cyber Cacti exists.");
+        AddHeading(stack, "About Us", "Why Cyber Cacti exists.");
 
         var intro = new StackPanel();
 
         intro.Children.Add(T("Who we are", 22, true, forest));
 
-        intro.Children.Add(
-            T(
-                "Cyber Cacti is a project focused on hedgehog awareness, practical conservation and helping people understand how small changes can make outdoor spaces safer for wildlife.",
-                16));
+        intro.Children.Add(T(
+            "Cyber Cacti is a project focused on hedgehog awareness, practical conservation and helping people understand how small changes can make outdoor spaces safer for wildlife.",
+            15));
 
         stack.Children.Add(Card(intro));
 
@@ -1206,140 +1370,162 @@ public partial class MainWindow : Window
 
         values.Children.Add(T("What we believe", 21, true, forest));
 
-        values.Children.Add(
-            T("🌿  Awareness", 16, true, forest));
+        values.Children.Add(T("01   Awareness", 16, true, forest));
+        values.Children.Add(T(
+            "Understanding wildlife is an important first step towards protecting it.",
+            14,
+            false,
+            muted));
 
-        values.Children.Add(
-            T("Understanding wildlife is an important first step towards protecting it.",
-                14));
+        values.Children.Add(T("02   Practical action", 16, true, forest));
+        values.Children.Add(T(
+            "Simple, thoughtful changes can help make gardens and green spaces safer.",
+            14,
+            false,
+            muted));
 
-        values.Children.Add(
-            T("🌱  Practical action", 16, true, forest));
-
-        values.Children.Add(
-            T("Simple, thoughtful changes can help make gardens and green spaces safer.",
-                14));
-
-        values.Children.Add(
-            T("🦔  Wildlife protection", 16, true, forest));
-
-        values.Children.Add(
-            T("We want to encourage people to care about the wildlife living around them.",
-                14));
+        values.Children.Add(T("03   Wildlife protection", 16, true, forest));
+        values.Children.Add(T(
+            "We want to encourage people to care about the wildlife living around them.",
+            14,
+            false,
+            muted));
 
         stack.Children.Add(Card(values));
     }
 
-    // ------------------------------------------------------------
+    // =========================================================
     // HEDGEHOGS
-    // ------------------------------------------------------------
+    // =========================================================
 
     private void BuildHedgehogs(StackPanel stack)
     {
-        AddPageHeading(
+        AddHeading(
             stack,
             "Meet the Hedgehogs",
             "Discover more about these fascinating visitors to our gardens.");
 
-        var intro = new Border
+        var hero = new Border
         {
-            Background = paleGreen,
-            CornerRadius = new CornerRadius(20),
-            Padding = new Thickness(28),
-            Margin = new Thickness(0, 0, 0, 18)
+            Background = pale,
+            CornerRadius = new CornerRadius(23),
+            Padding = new Thickness(25),
+            Margin = new Thickness(0, 0, 0, 17)
         };
 
-        var introStack = new StackPanel();
+        var grid = new Grid();
 
-        introStack.Children.Add(T("🦔", 42, false, forest));
-        introStack.Children.Add(
-            T("Getting to know hedgehogs", 22, true, forest));
+        grid.ColumnDefinitions.Add(new ColumnDefinition());
 
-        introStack.Children.Add(
-            T(
-                "Hedgehogs are mostly active at night and use gardens, parks and hedgerows to find food and move between habitats.",
-                15));
+        grid.ColumnDefinitions.Add(
+            new ColumnDefinition { Width = new GridLength(170) });
 
-        intro.Child = introStack;
-        stack.Children.Add(intro);
+        var copy = new StackPanel();
 
-        var habitats = new StackPanel();
+        copy.Children.Add(T(
+            "Getting to know hedgehogs",
+            22,
+            true,
+            forest));
 
-        habitats.Children.Add(T("Where do they live?", 20, true, forest));
+        copy.Children.Add(T(
+            "Hedgehogs are mostly active at night and use gardens, parks and hedgerows to find food and move between habitats.",
+            14,
+            false,
+            muted));
 
-        habitats.Children.Add(
-            T(
-                "Hedgehogs use a range of habitats, including gardens, parks, woodland edges and hedgerows. Connected green spaces can help them move between places.",
-                15));
+        Grid.SetColumn(copy, 0);
+        grid.Children.Add(copy);
 
-        stack.Children.Add(Card(habitats));
+        var art = new Canvas
+        {
+            Width = 150,
+            Height = 105,
+            VerticalAlignment = VerticalAlignment.Center
+        };
 
-        var hazards = new StackPanel();
+        AddHedgehog(art, 7, 27, 0.82);
 
-        hazards.Children.Add(T("What dangers do they face?", 20, true, forest));
+        Grid.SetColumn(art, 1);
+        grid.Children.Add(art);
 
-        hazards.Children.Add(
-            T(
-                "Some everyday garden features can create risks for hedgehogs:",
-                14));
+        hero.Child = grid;
+        stack.Children.Add(hero);
 
-        hazards.Children.Add(
-            T(
-                "• Uncovered drains and holes.\n• Loose netting and litter.\n• Garden machinery.\n• Barriers between gardens.\n• Lack of safe places to shelter.",
-                15));
+        var habitat = new StackPanel();
 
-        stack.Children.Add(Card(hazards));
+        habitat.Children.Add(T("Where do they live?", 20, true, forest));
 
-        var protection = new StackPanel();
+        habitat.Children.Add(T(
+            "Hedgehogs use a range of habitats, including gardens, parks, woodland edges and hedgerows. Connected green spaces can help them move between places.",
+            14));
 
-        protection.Children.Add(T("How can we protect them?", 20, true, forest));
+        stack.Children.Add(Card(habitat));
 
-        protection.Children.Add(
-            T(
-                "Making small changes to outdoor spaces can help. Check for wildlife before gardening, keep loose materials safely stored and consider providing a shallow dish of fresh water.",
-                15));
+        var dangers = new StackPanel();
 
-        protection.Children.Add(
-            Btn("See the full action checklist  →",
-                () => ShowPage("How to Help"),
-                true));
+        dangers.Children.Add(T("What dangers do they face?", 20, true, forest));
 
-        stack.Children.Add(Card(protection));
+        dangers.Children.Add(T(
+            "Some everyday garden features can create risks for hedgehogs:",
+            14));
+
+        dangers.Children.Add(T(
+            "• Uncovered drains and holes\n" +
+            "• Loose netting and litter\n" +
+            "• Garden machinery\n" +
+            "• Barriers between gardens\n" +
+            "• Lack of safe places to shelter",
+            14));
+
+        stack.Children.Add(Card(dangers));
+
+        var protect = new StackPanel();
+
+        protect.Children.Add(T("How can we protect them?", 20, true, forest));
+
+        protect.Children.Add(T(
+            "Making small changes to outdoor spaces can help. Check for wildlife before gardening, keep loose materials safely stored and consider providing a shallow dish of fresh water.",
+            14));
+
+        protect.Children.Add(Btn(
+            "See the full action checklist  →",
+            () => ShowPage("How to Help"),
+            true));
+
+        stack.Children.Add(Card(protect));
     }
 
-    // ------------------------------------------------------------
-    // HOW TO HELP CHECKLIST
-    // ------------------------------------------------------------
+    // =========================================================
+    // CHECKLIST
+    // =========================================================
 
     private void BuildChecklist(StackPanel stack)
     {
-        AddPageHeading(
+        AddHeading(
             stack,
             "How to Help",
             "Five practical ways to make outdoor spaces safer.");
 
-        int completed = tasks.Count(x => x);
+        int done = tasks.Count(x => x);
 
         var progress = new StackPanel();
 
         progress.Children.Add(T("YOUR CHECKLIST PROGRESS", 10, true, muted));
-        progress.Children.Add(
-            T($"{completed} / 5 completed", 24, true, forest));
+        progress.Children.Add(T($"{done} / 5 completed", 24, true, forest));
+        progress.Children.Add(MakeProgress(done));
 
-        progress.Children.Add(MakeProgress(completed));
-
-        progress.Children.Add(
-            T(
-                completed == 5
-                    ? "All done! Thank you for making a difference."
-                    : "Tick an action when you've completed it.",
-                13,
-                false,
-                muted));
+        progress.Children.Add(T(
+            done == 5
+                ? "All done! Thank you for making a difference."
+                : "Tick an action when you've completed it.",
+            13,
+            false,
+            muted));
 
         stack.Children.Add(Card(progress));
 
-        string[] suggestions =
+        string[] items =
         {
             "Create a small gap in a fence between gardens.",
             "Check for hedgehogs before using a mower or strimmer.",
@@ -1350,115 +1536,108 @@ public partial class MainWindow : Window
 
         var list = new StackPanel();
 
-        for (int i = 0; i < suggestions.Length; i++)
+        for (int i = 0; i < items.Length; i++)
         {
             int index = i;
 
+            var row = new Border
+            {
+                Background = B("#FAFBF8"),
+                CornerRadius = new CornerRadius(14),
+                Padding = new Thickness(14, 10, 14, 10),
+                Margin = new Thickness(0, 5, 0, 5),
+                BorderBrush = line,
+                BorderThickness = new Thickness(1)
+            };
+
             var check = new CheckBox
             {
-                Content = suggestions[i],
+                Content = items[i],
                 IsChecked = tasks[i],
-                FontSize = 15,
-                Margin = new Thickness(4, 12, 4, 12),
+                FontSize = 14,
                 Foreground = ink,
                 FontFamily = new FontFamily("Segoe UI"),
-                VerticalContentAlignment = VerticalAlignment.Center
+                VerticalContentAlignment = VerticalAlignment.Center,
+                Padding = new Thickness(5),
+                Margin = new Thickness(2)
             };
 
             check.Checked += (_, _) =>
             {
                 tasks[index] = true;
                 SaveProgress();
-                RefreshChecklistProgress(list);
+                ShowPage("How to Help");
             };
 
             check.Unchecked += (_, _) =>
             {
                 tasks[index] = false;
                 SaveProgress();
-                RefreshChecklistProgress(list);
+                ShowPage("How to Help");
             };
 
-            list.Children.Add(check);
+            row.Child = check;
+            list.Children.Add(row);
         }
 
-        list.Children.Add(
-            T(
-                "Only tick an action once you've actually completed it.",
-                12,
-                false,
-                muted));
+        list.Children.Add(T(
+            "Only tick an action once you've actually completed it.",
+            11,
+            false,
+            muted));
 
-        list.Children.Add(
-            Btn("Reset checklist",
-                () =>
-                {
-                    var result = MessageBox.Show(
-                        "Are you sure you want to reset all five actions?",
-                        "Reset progress",
-                        MessageBoxButton.YesNo,
-                        MessageBoxImage.Question);
-
-                    if (result == MessageBoxResult.Yes)
-                    {
-                        tasks = new bool[5];
-                        SaveProgress();
-                        ShowPage("How to Help");
-                    }
-                }));
+        list.Children.Add(Btn("Reset checklist", () =>
+        {
+            if (MessageBox.Show(
+                "Are you sure you want to reset all five actions?",
+                "Reset progress",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question) == MessageBoxResult.Yes)
+            {
+                tasks = new bool[5];
+                SaveProgress();
+                ShowPage("How to Help");
+            }
+        }));
 
         stack.Children.Add(Card(list));
     }
 
-    private void RefreshChecklistProgress(Panel panel)
-    {
-        // The saved task state is updated immediately.
-        // Rebuilding the page updates its progress display.
-        ShowPage("How to Help");
-    }
-
-    // ------------------------------------------------------------
+    // =========================================================
     // MORE
-    // ------------------------------------------------------------
+    // =========================================================
 
     private void BuildMore(StackPanel stack)
     {
-        AddPageHeading(
-            stack,
-            "More",
-            "Explore other areas of Cyber Cacti.");
+        AddHeading(stack, "More", "Explore other areas of Cyber Cacti.");
 
         var innovation = new StackPanel();
 
         innovation.Children.Add(T("Innovation Project", 21, true, forest));
+        innovation.Children.Add(T(
+            "Find out more about the Cyber Cacti innovation project.",
+            14,
+            false,
+            muted));
 
-        innovation.Children.Add(
-            T(
-                "Find out more about the Cyber Cacti innovation project.",
-                14,
-                false,
-                muted));
-
-        innovation.Children.Add(
-            Btn("Explore project  →",
-                () => ShowPage("Innovation Project")));
+        innovation.Children.Add(Btn(
+            "Explore project  →",
+            () => ShowPage("Innovation Project")));
 
         stack.Children.Add(Card(innovation));
 
         var contact = new StackPanel();
 
         contact.Children.Add(T("Contact Us", 21, true, forest));
+        contact.Children.Add(T(
+            "Have a question or an idea? Find our contact information here.",
+            14,
+            false,
+            muted));
 
-        contact.Children.Add(
-            T(
-                "Have a question or an idea? Find our contact information here.",
-                14,
-                false,
-                muted));
-
-        contact.Children.Add(
-            Btn("Contact information  →",
-                () => ShowPage("Contact Us")));
+        contact.Children.Add(Btn(
+            "Contact information  →",
+            () => ShowPage("Contact Us")));
 
         stack.Children.Add(Card(contact));
 
@@ -1467,25 +1646,24 @@ public partial class MainWindow : Window
         account.Children.Add(T("Your account", 21, true, forest));
         account.Children.Add(T("Signed in as " + username, 14, false, muted));
 
-        account.Children.Add(
-            Btn("Sign out",
-                () =>
-                {
-                    username = "";
-                    content = null;
-                    ShowLogin();
-                }));
+        account.Children.Add(Btn(
+            "Sign out",
+            () =>
+            {
+                username = "";
+                ShowLogin();
+            }));
 
         stack.Children.Add(Card(account));
     }
 
-    // ------------------------------------------------------------
+    // =========================================================
     // INNOVATION PROJECT
-    // ------------------------------------------------------------
+    // =========================================================
 
     private void BuildInnovation(StackPanel stack)
     {
-        AddPageHeading(
+        AddHeading(
             stack,
             "Innovation Project",
             "The next chapter of Cyber Cacti.");
@@ -1494,21 +1672,20 @@ public partial class MainWindow : Window
 
         panel.Children.Add(T("Our innovation project", 22, true, forest));
 
-        panel.Children.Add(
-            T(
-                "This page is reserved for the Cyber Cacti innovation project. More information will be added here.",
-                15));
+        panel.Children.Add(T(
+            "This page is reserved for the Cyber Cacti innovation project. More information will be added here.",
+            15));
 
         stack.Children.Add(Card(panel));
     }
 
-    // ------------------------------------------------------------
+    // =========================================================
     // CONTACT
-    // ------------------------------------------------------------
+    // =========================================================
 
     private void BuildContact(StackPanel stack)
     {
-        AddPageHeading(
+        AddHeading(
             stack,
             "Contact Us",
             "We'd love to hear from you.");
@@ -1517,32 +1694,30 @@ public partial class MainWindow : Window
 
         panel.Children.Add(T("Get in touch", 22, true, forest));
 
-        panel.Children.Add(
-            T(
-                "Questions or ideas about Cyber Cacti? You can contact us using the email address below.",
-                15));
+        panel.Children.Add(T(
+            "Questions or ideas about Cyber Cacti? You can contact us using the email address below.",
+            14));
 
         var email = new Border
         {
-            Background = paleGreen,
-            CornerRadius = new CornerRadius(12),
+            Background = pale,
+            CornerRadius = new CornerRadius(15),
             Padding = new Thickness(17),
-            Margin = new Thickness(0, 15, 0, 10),
+            Margin = new Thickness(0, 14, 0, 8),
             Child = T("cybercactirobotics@gmail.com", 16, true, forest)
         };
 
         panel.Children.Add(email);
-
         stack.Children.Add(Card(panel));
     }
 
-    // ------------------------------------------------------------
-    // DASH GAME
-    // ------------------------------------------------------------
+    // =========================================================
+    // HEDGEHOG DASH GAME
+    // =========================================================
 
     private void BuildGame(StackPanel stack)
     {
-        AddPageHeading(
+        AddHeading(
             stack,
             "Hedgehog Dash",
             "Collect apples, dodge logs and see how high you can score.");
@@ -1552,59 +1727,57 @@ public partial class MainWindow : Window
             Margin = new Thickness(0, 0, 0, 12)
         };
 
-        stats.ColumnDefinitions.Add(new ColumnDefinition());
-        stats.ColumnDefinitions.Add(new ColumnDefinition());
-        stats.ColumnDefinitions.Add(new ColumnDefinition());
+        for (int i = 0; i < 3; i++)
+        {
+            stats.ColumnDefinitions.Add(new ColumnDefinition());
+        }
 
-        var scorePanel = new StackPanel();
-        scorePanel.Children.Add(T("SCORE", 10, true, muted));
-        scorePanel.Children.Add(T("0", 22, true, forest));
+        gameScore = T("0", 25, true, forest);
+        gameLives = T("♥ ♥ ♥", 23, true, red);
+        gameBest = T(highScore.ToString(), 25, true, forest);
 
-        var livesPanel = new StackPanel();
-        livesPanel.Children.Add(T("LIVES", 10, true, muted));
-        livesPanel.Children.Add(T("♥ ♥ ♥", 22, true, danger));
+        var s1 = StatBlock("SCORE", gameScore);
+        var s2 = StatBlock("LIVES", gameLives);
+        var s3 = StatBlock("PERSONAL BEST", gameBest);
 
-        var bestPanel = new StackPanel();
-        bestPanel.Children.Add(T("PERSONAL BEST", 10, true, muted));
-        bestPanel.Children.Add(T(highScore.ToString(), 22, true, forest));
+        Grid.SetColumn(s1, 0);
+        Grid.SetColumn(s2, 1);
+        Grid.SetColumn(s3, 2);
 
-        Grid.SetColumn(scorePanel, 0);
-        Grid.SetColumn(livesPanel, 1);
-        Grid.SetColumn(bestPanel, 2);
-
-        stats.Children.Add(scorePanel);
-        stats.Children.Add(livesPanel);
-        stats.Children.Add(bestPanel);
-
-        gameInfo = T(
-            $"Score: 0     Lives: 3     Best: {highScore}",
-            15,
-            true,
-            forest);
+        stats.Children.Add(s1);
+        stats.Children.Add(s2);
+        stats.Children.Add(s3);
 
         stack.Children.Add(Card(stats));
+
+        gameInfo = T(
+            "Ready when you are — press start to play.",
+            13,
+            true,
+            muted);
+
         stack.Children.Add(gameInfo);
 
         gameCanvas = new Canvas
         {
-            Height = 390,
-            Background = B("#EAF0E5"),
+            Height = 405,
+            Background = B("#EAF1E6"),
             ClipToBounds = true,
             Focusable = true
         };
 
-        var gameBorder = new Border
+        var border = new Border
         {
-            Background = B("#EAF0E5"),
-            CornerRadius = new CornerRadius(18),
-            BorderBrush = B("#DCE5D8"),
+            Background = B("#EAF1E6"),
+            CornerRadius = new CornerRadius(22),
+            BorderBrush = B("#DDE7D9"),
             BorderThickness = new Thickness(1),
             ClipToBounds = true,
             Child = gameCanvas,
             Margin = new Thickness(0, 0, 0, 12)
         };
 
-        stack.Children.Add(gameBorder);
+        stack.Children.Add(border);
 
         var controls = new StackPanel
         {
@@ -1612,37 +1785,30 @@ public partial class MainWindow : Window
             HorizontalAlignment = HorizontalAlignment.Center
         };
 
-        controls.Children.Add(
-            Btn("◀  LEFT",
-                () => MovePlayer(-1)));
-
-        controls.Children.Add(
-            Btn("START / RESTART",
-                StartGame,
-                true));
-
-        controls.Children.Add(
-            Btn("RIGHT  ▶",
-                () => MovePlayer(1)));
+        controls.Children.Add(Btn("←  LEFT", () => MovePlayer(-1)));
+        controls.Children.Add(Btn("START / RESTART", StartGame, true));
+        controls.Children.Add(Btn("RIGHT  →", () => MovePlayer(1)));
 
         stack.Children.Add(controls);
 
-        stack.Children.Add(
-            T(
-                "Use the left and right arrow keys, or the buttons above, to change lanes.",
-                12,
-                false,
-                muted));
-
-        stack.Children.Add(
-            T(
-                "Apples give you points. Logs cost you a life. The game gets faster as your score increases.",
-                13,
-                false,
-                muted));
+        stack.Children.Add(T(
+            "Use the left and right arrow keys, or the buttons, to change lanes. Collect apples for points and avoid logs.",
+            12,
+            false,
+            muted));
 
         DrawGameBackground();
         DrawPlayer();
+    }
+
+    private StackPanel StatBlock(string label, TextBlock value)
+    {
+        var panel = new StackPanel();
+
+        panel.Children.Add(T(label, 9, true, muted));
+        panel.Children.Add(value);
+
+        return panel;
     }
 
     private void MovePlayer(int direction)
@@ -1703,6 +1869,19 @@ public partial class MainWindow : Window
         Focus();
     }
 
+    private double GameWidth()
+    {
+        return gameCanvas != null && gameCanvas.ActualWidth > 0
+            ? gameCanvas.ActualWidth
+            : 600;
+    }
+
+    private double LaneX(int which)
+    {
+        return GameWidth() / 2 +
+            (which - 1) * (GameWidth() * 0.65 / 3);
+    }
+
     private void GameTick()
     {
         if (!playing || gameCanvas == null)
@@ -1710,10 +1889,10 @@ public partial class MainWindow : Window
 
         ticks++;
 
-        if (ticks % 28 == 0)
+        if (ticks % 27 == 0)
             SpawnObject();
 
-        double speed = 3.3 + score / 12.0;
+        double speed = 3.1 + score / 12.0;
         double playerY = gameCanvas.ActualHeight - 58;
 
         foreach (var obj in objects.ToList())
@@ -1722,20 +1901,16 @@ public partial class MainWindow : Window
             Canvas.SetTop(obj.Shape, obj.Y);
 
             bool collision =
-                obj.Y > playerY - 20 &&
+                obj.Y > playerY - 21 &&
                 obj.Y < playerY + 27 &&
                 obj.Lane == lane;
 
             if (collision)
             {
                 if (obj.Apple)
-                {
                     score++;
-                }
                 else
-                {
                     lives--;
-                }
 
                 gameCanvas.Children.Remove(obj.Shape);
                 objects.Remove(obj);
@@ -1763,18 +1938,27 @@ public partial class MainWindow : Window
 
         gameCanvas.Children.Clear();
 
-        double width = ActualGameWidth();
-        double height = gameCanvas.Height;
+        double width = GameWidth();
+        double height = 405;
 
-        var road = new Rectangle
+        var ground = new Rectangle
         {
-            Width = width * 0.65,
+            Width = width,
             Height = height,
-            Fill = B("#DDE8D8")
+            Fill = B("#EAF1E6")
         };
 
-        Canvas.SetLeft(road, width * 0.175);
-        Canvas.SetTop(road, 0);
+        gameCanvas.Children.Add(ground);
+
+        var road = new Border
+        {
+            Width = width * 0.67,
+            Height = height,
+            Background = B("#DDE8D9"),
+            CornerRadius = new CornerRadius(20)
+        };
+
+        Canvas.SetLeft(road, width * 0.165);
         gameCanvas.Children.Add(road);
 
         for (int i = 1; i <= 2; i++)
@@ -1783,31 +1967,42 @@ public partial class MainWindow : Window
             {
                 Width = 2,
                 Height = height,
-                Fill = B("#C4D3BF"),
+                Fill = B("#C2D2BE"),
                 Opacity = 0.9
             };
 
-            Canvas.SetLeft(divider,
-                width / 2 + (i - 1.5) * (width * 0.65 / 3));
+            Canvas.SetLeft(
+                divider,
+                width / 2 + (i - 1.5) * (width * 0.67 / 3));
 
-            Canvas.SetTop(divider, 0);
             gameCanvas.Children.Add(divider);
         }
 
-        var title = T("HEDGEHOG DASH", 11, true, B("#91A58D"));
-        Canvas.SetLeft(title, 15);
-        Canvas.SetTop(title, 12);
+        for (int i = 0; i < 7; i++)
+        {
+            var leaf = new Ellipse
+            {
+                Width = 13,
+                Height = 7,
+                Fill = B("#B8CDB0"),
+                RenderTransform = new RotateTransform(i * 23)
+            };
+
+            Canvas.SetLeft(
+                leaf,
+                18 + (i * 71) % Math.Max(1, width * 0.14));
+
+            Canvas.SetTop(leaf, 35 + i * 48);
+
+            gameCanvas.Children.Add(leaf);
+        }
+
+        var title = T("HEDGEHOG DASH", 10, true, B("#8DA18A"));
+
+        Canvas.SetLeft(title, 17);
+        Canvas.SetTop(title, 13);
+
         gameCanvas.Children.Add(title);
-    }
-
-    private double ActualGameWidth()
-    {
-        if (gameCanvas == null)
-            return 600;
-
-        return gameCanvas.ActualWidth > 0
-            ? gameCanvas.ActualWidth
-            : 600;
     }
 
     private void SpawnObject()
@@ -1815,33 +2010,70 @@ public partial class MainWindow : Window
         if (gameCanvas == null)
             return;
 
-        bool apple = Random.Shared.Next(100) < 58;
-        int objectLane = Random.Shared.Next(3);
+        bool apple = random.Next(100) < 58;
+        int which = random.Next(3);
 
-        var shape = new Ellipse
+        FrameworkElement shape;
+
+        if (apple)
         {
-            Width = apple ? 29 : 34,
-            Height = apple ? 29 : 22,
-            Fill = apple ? B("#D95D39") : B("#795548"),
-            Stroke = white,
-            StrokeThickness = 2
-        };
+            var applePanel = new Grid
+            {
+                Width = 31,
+                Height = 34
+            };
 
-        double width = ActualGameWidth();
+            var fruit = new Ellipse
+            {
+                Width = 27,
+                Height = 27,
+                Fill = B("#D96A4E"),
+                Stroke = white,
+                StrokeThickness = 1.5
+            };
+
+            var leaf = new Ellipse
+            {
+                Width = 10,
+                Height = 5,
+                Fill = B("#6F9B68"),
+                RenderTransform = new RotateTransform(-30)
+            };
+
+            Canvas.SetLeft(leaf, 17);
+            Canvas.SetTop(leaf, 0);
+
+            applePanel.Children.Add(fruit);
+            applePanel.Children.Add(leaf);
+
+            shape = applePanel;
+        }
+        else
+        {
+            shape = new Border
+            {
+                Width = 38,
+                Height = 23,
+                Background = B("#795B48"),
+                CornerRadius = new CornerRadius(10),
+                BorderBrush = B("#5F4437"),
+                BorderThickness = new Thickness(1)
+            };
+        }
 
         Canvas.SetLeft(
             shape,
-            width / 2 + (objectLane - 1) * (width * 0.65 / 3) - shape.Width / 2);
+            LaneX(which) - (apple ? 15 : 19));
 
-        Canvas.SetTop(shape, -35);
+        Canvas.SetTop(shape, -40);
 
         gameCanvas.Children.Add(shape);
 
         objects.Add(new GameObject
         {
             Shape = shape,
-            Lane = objectLane,
-            Y = -35,
+            Lane = which,
+            Y = -40,
             Apple = apple
         });
     }
@@ -1861,44 +2093,47 @@ public partial class MainWindow : Window
         var player = new Border
         {
             Tag = "player",
-            Width = 46,
-            Height = 46,
-            CornerRadius = new CornerRadius(23),
-            Background = forest,
-            BorderBrush = B("#D8E5D4"),
-            BorderThickness = new Thickness(2),
-            Child = new TextBlock
-            {
-                Text = "🦔",
-                FontSize = 27,
-                TextAlignment = TextAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center,
-                HorizontalAlignment = HorizontalAlignment.Center
-            }
+            Width = 52,
+            Height = 48,
+            CornerRadius = new CornerRadius(24),
+            Background = B("#F5E5D3"),
+            BorderBrush = B("#D8B99A"),
+            BorderThickness = new Thickness(1.5),
+            Child = new Canvas { ClipToBounds = true }
         };
 
-        double width = ActualGameWidth();
+        var art = (Canvas)player.Child;
 
-        Canvas.SetLeft(
-            player,
-            width / 2 + (lane - 1) * (width * 0.65 / 3) - 23);
+        AddHedgehog(art, -4, 4, 0.43);
+
+        Canvas.SetLeft(player, LaneX(lane) - 26);
 
         Canvas.SetTop(
             player,
-            Math.Max(0, gameCanvas.ActualHeight - 55));
+            Math.Max(0, gameCanvas.ActualHeight - 58));
 
         gameCanvas.Children.Add(player);
     }
 
     private void UpdateGameInfo()
     {
-        if (gameInfo == null)
-            return;
+        if (gameScore != null)
+            gameScore.Text = score.ToString();
 
-        string hearts = new string('♥', Math.Max(0, lives));
+        if (gameLives != null)
+            gameLives.Text = lives > 0
+                ? string.Join(" ", Enumerable.Repeat("♥", lives))
+                : "0";
 
-        gameInfo.Text =
-            $"Score: {score}     Lives: {hearts}     Best: {highScore}";
+        if (gameBest != null)
+            gameBest.Text = highScore.ToString();
+
+        if (gameInfo != null)
+        {
+            gameInfo.Text = playing
+                ? "Collect apples and keep moving — the pace increases as you score."
+                : "Ready when you are — press start to play.";
+        }
     }
 
     private void EndGame()
@@ -1911,52 +2146,56 @@ public partial class MainWindow : Window
             SaveProgress();
         }
 
+        UpdateGameInfo();
+
         if (gameInfo != null)
         {
             gameInfo.Text =
-                $"GAME OVER     Score: {score}     Personal best: {highScore}";
+                $"GAME OVER  ·  You scored {score}  ·  Personal best {highScore}";
         }
 
         if (gameCanvas != null)
         {
-            var overlay = new Border
+            var panel = new Border
             {
-                Background = B("#F5F4EC"),
-                CornerRadius = new CornerRadius(15),
+                Background = B("#F7F7F1"),
+                CornerRadius = new CornerRadius(22),
                 Padding = new Thickness(25),
-                Width = 260,
+                Width = 270,
+                BorderBrush = line,
+                BorderThickness = new Thickness(1),
                 Child = new StackPanel
                 {
                     HorizontalAlignment = HorizontalAlignment.Center,
                     Children =
                     {
-                        T("GAME OVER", 23, true, forest),
-                        T($"You scored {score} points.", 15, false, ink),
-                        T($"Personal best: {highScore}", 13, true, muted)
+                        T("RUN COMPLETE", 22, true, forest),
+                        T($"You scored {score} points.", 14, false, ink),
+                        T($"Personal best: {highScore}", 12, true, muted)
                     }
                 }
             };
 
-            Canvas.SetLeft(overlay,
-                Math.Max(10, (ActualGameWidth() - 260) / 2));
+            Canvas.SetLeft(
+                panel,
+                Math.Max(10, (GameWidth() - 270) / 2));
 
-            Canvas.SetTop(overlay, 95);
+            Canvas.SetTop(panel, 105);
 
-            gameCanvas.Children.Add(overlay);
+            gameCanvas.Children.Add(panel);
         }
     }
 
     private void StopGame()
     {
         playing = false;
-
         timer?.Stop();
         timer = null;
     }
 
-    // ------------------------------------------------------------
+    // =========================================================
     // CLOSE
-    // ------------------------------------------------------------
+    // =========================================================
 
     protected override void OnClosed(EventArgs e)
     {
