@@ -68,6 +68,11 @@ namespace CyberCacti
             ProgressBarControl.Value = completed;
             ProgressText.Text =
                 $"{completed} out of 5 actions completed";
+
+            DashboardCount.Text = $"{completed} / 5";
+            DashboardProgress.Value = completed;
+            DashboardPercentage.Text =
+                $"{completed * 20}% completed";
         }
 
         private void ResetProgress_Click(object sender, RoutedEventArgs e)
@@ -87,33 +92,39 @@ namespace CyberCacti
 
         private void Navigate_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is not Button button || button.Tag is not string page)
+            if (sender is not Button button ||
+                button.Tag is not string page)
                 return;
 
             PageTitle.Text = page;
 
             bool showHelp = page == "How to Help";
+            bool showDashboard = page == "Dashboard";
 
             HelpPanel.Visibility = showHelp
                 ? Visibility.Visible
                 : Visibility.Collapsed;
 
-            StandardPanel.Visibility = showHelp
-                ? Visibility.Collapsed
-                : Visibility.Visible;
+            DashboardPanel.Visibility = showDashboard
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+
+            StandardPanel.Visibility =
+                (!showHelp && !showDashboard)
+                ? Visibility.Visible
+                : Visibility.Collapsed;
 
             switch (page)
             {
                 case "Home":
-                    PageHeading.Text = "Protecting hedgehogs, one step at a time.";
+                    PageHeading.Text =
+                        "Protecting hedgehogs, one step at a time.";
                     PageDescription.Text =
                         "Welcome to Cyber Cacti! Explore our project, discover fascinating hedgehog facts and learn how you can help protect these wonderful animals.";
                     break;
 
                 case "Dashboard":
-                    PageHeading.Text = "Your Dashboard";
-                    PageDescription.Text =
-                        "Track your progress, discover hedgehog facts and see how your actions can make a difference.";
+                    UpdateProgress();
                     break;
 
                 case "About Us":
@@ -160,7 +171,9 @@ namespace CyberCacti
         private void Explore_Click(object sender, RoutedEventArgs e)
         {
             PageTitle.Text = "How to Help";
+
             StandardPanel.Visibility = Visibility.Collapsed;
+            DashboardPanel.Visibility = Visibility.Collapsed;
             HelpPanel.Visibility = Visibility.Visible;
         }
     }
