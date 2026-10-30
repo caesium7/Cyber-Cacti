@@ -1,31 +1,37 @@
 
-name: Build Cyber Cacti for Windows
+name: Build Cyber Cacti Windows Release
 
 on:
-  workflow_dispatch:
-  push:
-    branches:
-      - main
+  release:
+    types: [published]
+
+permissions:
+  contents: write
 
 jobs:
   build:
     runs-on: windows-latest
 
     steps:
-      - name: Check out repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Install .NET 10
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 10.0.x
+          dotnet-version: '10.0.x'
 
-      - name: Build Windows application
-        run: dotnet publish CyberCacti/CyberCacti.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish
+      - name: Publish Cyber Cacti
+        run: >
+          dotnet publish ./CyberCacti/CyberCacti.csproj
+          -c Release
+          -r win-x64
+          --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -o ./publish
 
-      - name: Upload Windows executable
-        uses: actions/upload-artifact@v4
+      - name: Attach EXE to GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          name: CyberCacti-Windows
-          path: publish/
-          if-no-files-found: error
+          files: publish/CyberCacti.exe
