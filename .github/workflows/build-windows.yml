@@ -2,6 +2,7 @@
 name: Build Cyber Cacti Windows Release
 
 on:
+  workflow_dispatch:
   release:
     types: [published]
 
@@ -21,7 +22,7 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      - name: Publish Cyber Cacti
+      - name: Build Windows executable
         run: >
           dotnet publish ./CyberCacti/CyberCacti.csproj
           -c Release
@@ -31,7 +32,8 @@ jobs:
           -p:IncludeNativeLibrariesForSelfExtract=true
           -o ./publish
 
-      - name: Attach EXE to GitHub Release
+      - name: Upload executable to release
         uses: softprops/action-gh-release@v2
         with:
-          files: publish/CyberCacti.exe
+          tag_name: v1.0.0
+          files: publish/*.exe
