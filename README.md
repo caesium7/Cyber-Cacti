@@ -17,3 +17,7 @@ Cyber Cacti is an app combining environmental awareness, robotics and hedgehog c
 ## Updates
 
 New versions will be published through GitHub Releases.
+
+## How to download
+
+Click on the latest release, from the Releases tab on the right. From there, scroll down to Assets and double-click the .exe file in order to download it.
